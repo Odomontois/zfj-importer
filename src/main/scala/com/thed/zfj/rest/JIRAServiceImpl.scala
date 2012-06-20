@@ -71,7 +71,7 @@ object JiraService {
 	}
 
 	def getMeta():List[Project] = {
-			val meta = http(url(url_base + "/api/latest/issue/createmeta?expand=projects.issuetypes.fields").as_!(userName, passwd)  >~ { _.getLines.mkString } )
+			val meta = http(getHttpRequest("/api/latest/issue/createmeta?expand=projects.issuetypes.fields").as_!(userName, passwd)  >~ { _.getLines.mkString } )
 			//val projects = JSON.parseFull(meta).get.asInstanceOf[Map[String, Any]].get("projects").get.asInstanceOf[List[Any]]
 			var projects:List[Project] = (SJSON.in[JiraMetaResponse](meta)).projects
 			projects
@@ -140,7 +140,7 @@ object JiraService {
 	private def saveTestcase(issue:Map[String, AnyRef]):String = {
 		var fields = new String( SJSON.out(Map("fields" -> issue)))
 		println(fields)
-		val issueOutput = http(url(url_base + "/api/latest/issue/").as_!(userName, passwd)  << (fields, "application/json") >~ { _.getLines.mkString } )
+		val issueOutput = http(getHttpRequest("/api/latest/issue/").as_!(userName, passwd)  << (fields, "application/json") >~ { _.getLines.mkString } )
 		val issueRes = SJSON.in[LocalIssue](issueOutput)
 		println(issueOutput)
 		issueRes.id
@@ -148,7 +148,7 @@ object JiraService {
 
   private def updateComments(issueId:String, comments:String):Unit = {
     var fields = new String( SJSON.out(Map("body" -> comments)))
-    val issueOutput = http(url(url_base + "/api/latest/issue/" + issueId + "/comment").as_!(userName, passwd)  << (fields, "application/json") >~ { _.getLines.mkString } )
+    val issueOutput = http(getHttpRequest("/api/latest/issue/" + issueId + "/comment").as_!(userName, passwd)  << (fields, "application/json") >~ { _.getLines.mkString } )
     println(issueOutput);
   }
 
@@ -156,9 +156,20 @@ object JiraService {
 		//for(val step:TestStep <- steps) {
 			var fields = new String( SJSON.out(step))
 			println(fields + " \n IssueId is:" + issueId)
-			var stepResponse = http(url(url_base + "/zephyr/latest/teststep/" + issueId).as_!(userName, passwd)  << (fields, "application/json") >~ { _.getLines.mkString } )
+			var stepResponse = http(getHttpRequest("/zephyr/latest/teststep/" + issueId).as_!(userName, passwd)  << (fields, "application/json") >~ { _.getLines.mkString } )
 			println(stepResponse)
 			stepResponse
 		//}
 	}
+
+
+  def getHttpRequest(urlFragment:String):Request = {
+    if(url_base.indexOf("https") > -1){
+      System.setProperty("sun.security.ssl.allowUnsafeRenegotiation", "true")
+      System.setProperty("sun.security.ssl.allowLegacyHelloMessages", "true")
+      return url(url_base + urlFragment).secure
+    }
+    else
+      return url(url_base + urlFragment)
+  }
 }
