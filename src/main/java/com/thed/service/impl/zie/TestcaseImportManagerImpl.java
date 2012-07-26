@@ -343,7 +343,8 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 
 				/* field specific handling */
 				if (idValue.equals(ZephyrFieldEnum.PRIORITY)) {
-					value = ObjectUtil.reverseTranslatePreference(value, ObjectUtil.TC_PRIORITY_STATUS_MAP, "");
+					// Skipping any special handling for now
+					// value = ObjectUtil.reverseTranslatePreference(value, ObjectUtil.TC_PRIORITY_STATUS_MAP, "");
 				} else if (holder.getFieldConfig().getId().toString().equals(ZephyrFieldEnum.FLAG_AUTOMATION)) {
 
 					if(value.equalsIgnoreCase("A") || value.toLowerCase().startsWith("auto")) {

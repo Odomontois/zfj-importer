@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
+
+	<appender name="CONSOLE" class="org.apache.log4j.ConsoleAppender">
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="%d %p [%t] %c{1}.%M(%L) | %m%n" />
+		</layout>
+	</appender>
+
+	<appender name="Rolling" class="org.apache.log4j.DailyRollingFileAppender">
+		<param name="file" value="./logs/zfjImporter.log" />
+		<param name="DatePattern" value="'.'yyyy-MM-dd" />
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="%d %p [%t] %c{1}.%M(%L) | %m%n" />
+		</layout>
+	</appender>
+
+	<appender name="devnull" class="org.apache.log4j.varia.NullAppender"> 
+        <layout class="org.apache.log4j.PatternLayout"> 
+            <param name="ConversionPattern" value="%d %p [%t]| %m%n"/> 
+        </layout> 
+    </appender>
+
+    <logger name="com.thed.server.event.DataListener" additivity="false">
+        <level value="FATAL"/>
+         <appender-ref ref="devnull"/>
+    </logger>
+    
+	<logger name="net.sf.ehcache">
+		<level value="ERROR" />
+	</logger>
+
+	<logger name="org.apache">
+		<level value="ERROR" />
+	</logger>
+
+	<logger name="org.springframework">
+		<level value="ERROR" />
+	</logger>
+
+	<logger name="com.thed.zfj.ui">
+		<level value="DEBUG" />
+        <appender-ref ref="Rolling"/>
+	</logger>
+
+    <logger name="com.thed">
+		<level value="ERROR" />
+
+	</logger>
+
+	<root>
+		<level value="WARN" />
+		<appender-ref ref="CONSOLE" />
+		<appender-ref ref="Rolling" />
+	</root>
+
+</log4j:configuration>
