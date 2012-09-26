@@ -15,7 +15,7 @@ Features
 Download
 -------- 
 
-You can download the latest pre-complied binary from the `Downloads 
+You can download the latest pre-compiled binary from the `Downloads 
 <https://bitbucket.org/zfjdeveloper/zfj-importer/downloads/>`_ tab.
 
 
@@ -47,7 +47,7 @@ Then follow these steps:
 	
 - Identify the Discriminator (this allows the import process to distinguish between multiple test cases in a single Excel file - possible discriminators are "By empty row", "By ID change", or "By Testcase name change")
 - Pick the import file from the system where you are running the importer
-- Create a mapping of the columns in the Excel file to the appropriate fields in Zephyr for JIRA (which are Name, Test Steps, Expected Results, External ID, Test Data, Priority, Comments, Labels, etc.)
+- Create a mapping of the columns in the Excel file use column IDs (A,B,C,...) to the appropriate fields in Zephyr for JIRA
 - Click on the "Start Import" button.
 
 Once the import is completed, the "Start Import" button will be re-enabled.  At this point, you can check your imported tests in the appropriate Zephyr for JIRA project.
@@ -57,6 +57,7 @@ Limitations
 ----------- 
 
 - Import Tests from XML (TestLink) option not implemeted yet (coming soon)
+- If your JIRA is using a self-signed SSL certifiate make sure that the certifcate is added to the Java keystore before launching the utility
 
 
 Source
