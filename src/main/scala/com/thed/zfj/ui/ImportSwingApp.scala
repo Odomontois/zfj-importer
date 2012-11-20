@@ -87,9 +87,14 @@ object ExcelImporter extends BaseImporter{
       fileFilter = new javax.swing.filechooser.FileNameExtensionFilter(".xls and .xlsx files", "xls", "xlsx")
     }
   }
+
+  override def getTableColumns:List[String] = {
+    return List("JIRA Field","Excel Column")
+  }
+
   override def addBaseFields():Unit = {
     super.addBaseFields();
-    Constants.fieldConfigs.putAll(Constants.systemFieldConfigs)
+    Constants.fieldConfigs.putAll(Constants.excelFieldConfigs)
   }
 }
 
@@ -99,6 +104,14 @@ object XMLImporter extends BaseImporter{
   override def getImportFileChooser():FileChooser = {new FileChooser(new java.io.File(".")){
       fileFilter = new javax.swing.filechooser.FileNameExtensionFilter("Testlink .xml files", "xml")
     }
+  }
+  override def getTableColumns:List[String] = {
+    return List("JIRA Field","XML Column")
+  }
+
+  override def addBaseFields():Unit = {
+    super.addBaseFields();
+    Constants.fieldConfigs.putAll(Constants.xmlFieldConfigs)
   }
 }
 
@@ -114,10 +127,10 @@ abstract class BaseImporter extends FlowPanel{
   object tfUserName extends TextField{ columns = 5; text="admin"}
   object tfPassword extends PasswordField{ columns = 5; text="admin"}
 
-  val cbProjects = new ComboBox(List[Project](new Project())){
+  val cbProjects = new ComboBox(List[Project](JiraService.dummyProject)){
     renderer = Renderer(_.name)
   }
-  val cbissueType = new ComboBox(List[IssueType](new IssueType())){
+  val cbissueType = new ComboBox(List[IssueType](JiraService.dummyIssueType)){
     renderer = Renderer(_.name)
   }
   var cbDiscriminator = new ComboBox(List[Map[String, String]](Map("name" -> Constants.BY_EMPTY_ROW, "label" -> "By Emptry Row"),
@@ -125,23 +138,23 @@ abstract class BaseImporter extends FlowPanel{
     Map("name" -> Constants.BY_TESTCASE_NAME_CHANGE, "label" -> "By Testcase name Change"))){
     renderer = Renderer(_.get("label").get)
   }
-  val excelFldPanel= new FlowPanel(FlowPanel.Alignment.Left)(new Label("Discriminator"), cbDiscriminator, new Label("Starting Row #"), tfStartingRowNumber)
-  val spreadSheet = new Spreadsheet(15, 2)
+  val excelFldPanel= new FlowPanel(FlowPanel.Alignment.Left)(new Label("Discriminator:"), cbDiscriminator, new Label("Starting Row #:"), tfStartingRowNumber)
+  val spreadSheet = new Spreadsheet(15, 2, getTableColumns)
   val importFileName = new TextField{columns=25}
   val importFileButton = new Button {text = "Pick Import File"}
   contents += new BoxPanel(Orientation.Vertical){
     contents += new FlowPanel{
-      contents += new Label("Url")
+      contents += new Label("Url: ")
       contents += tfUrl
-      contents += new Label("username")
+      contents += new Label("username: ")
       contents += tfUserName
-      contents += new Label("password")
+      contents += new Label("password: ")
       contents += tfPassword
       contents += btConnect
     }
     /*Project/IssueType selection panel*/
     contents += new FlowPanel(FlowPanel.Alignment.Left)(
-      new Label("Projects"), cbProjects, new Label("Issue Type"), cbissueType
+      new Label("Project: "), cbProjects, new Label("Issue Type: "), cbissueType
     )
     contents += excelFldPanel
     contents += new FlowPanel(FlowPanel.Alignment.Left)(
@@ -158,24 +171,32 @@ abstract class BaseImporter extends FlowPanel{
       JiraService.url_base=tfUrl.text
       JiraService.userName=tfUserName.text
       JiraService.passwd = tfPassword.password.mkString
-      val res = JiraService.getMeta();
+      val res = JiraService.getProjects();
       cbProjects.peer.setModel(ComboBox.newConstantModel(res))
-      val issueTypes = cbProjects.selection.item.issuetypes
-      cbissueType.peer.setModel(ComboBox.newConstantModel(issueTypes))
     case EditDone(`tfUserName`) =>
       println(tfUserName.text)
     case EditDone(`tfPassword`) =>
-      println(tfPassword.password.deep.mkString)
+      //println(tfPassword.password.deep.mkString)
     case SelectionChanged(`cbProjects`) =>
-      println (cbProjects.selection.item.issuetypes)
-      val issueTypes = cbProjects.selection.item.issuetypes
-      cbissueType.peer.setModel(ComboBox.newConstantModel(issueTypes))
+      println ("Project changed " + cbProjects.selection.item.name)
+      if(cbProjects.selection.item.id != "-1"){
+        var issueTypes = JiraService.getMeta(cbProjects.selection.item.id).get(0).issuetypes
+        issueTypes ::= JiraService.dummyIssueType
+        cbissueType.peer.setModel(ComboBox.newConstantModel(issueTypes))
+      }else{
+        cbissueType.peer.setModel(ComboBox.newConstantModel(List[IssueType](JiraService.dummyIssueType)))
+      }
 
     case SelectionChanged(`cbissueType`) =>
-      println (cbProjects.selection.item.issuetypes)
-      addBaseFields; addCustomFields
-      spreadSheet.tableModel.addAll(Constants.fieldConfigs)
-      spreadSheet.table.revalidate()
+      println ("IssueType changed " + cbissueType.selection.item.name + cbProjects.selection.item.issuetypes)
+      if(cbissueType.selection.item.id != "-1"){
+        addBaseFields; addCustomFields
+        println ("Fields populated " + Constants.fieldConfigs)
+        spreadSheet.tableModel.addAll(Constants.fieldConfigs)
+        println ("New Fields should show up in Table ")
+        spreadSheet.table.revalidate()
+      }
+
     case ButtonClicked(`importFileButton`) =>
       val configFileChooser = getImportFileChooser()
       if(configFileChooser.showOpenDialog(null) == FileChooser.Result.Approve){
@@ -225,11 +246,13 @@ abstract class BaseImporter extends FlowPanel{
       result.get()
   }
 
+  def getTableColumns:List[String]
+
   /**
    * Adds customes field configurations to Constants, from where, they are accessed to populate UI as well to create customField data construct consumed to create Rest Request
    */
   def addCustomFields {
-    cbissueType.selection.item.fields.foreach {
+    cbissueType.selection.item.ensuring(_.fields != null).fields.foreach {
       entry => val (fldName, fldVal) = entry;
 
       if (fldName.startsWith("customfield")) {
@@ -277,8 +300,8 @@ abstract class BaseImporter extends FlowPanel{
   def getImportFileChooser():FileChooser
 }
 
-class Spreadsheet(val height: Int, val width: Int) extends ScrollPane {
-	val tableModel = new MyTableModel( Array[Array[Any]](), List("JIRA Field","Excel Column") )
+class Spreadsheet(val height: Int, val width: Int, tableColumns:List[String]) extends ScrollPane {
+	val tableModel = new MyTableModel( Array[Array[Any]](), tableColumns )
 	val table = new Table(height, width) { 
 		model = tableModel
 		rowHeight = 25 

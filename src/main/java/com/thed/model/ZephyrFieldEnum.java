@@ -48,11 +48,13 @@ public interface ZephyrFieldEnum {
 	public static final String STATUS = "47";
 	public static final String RESOLUTION = "48";
 
+    public static final String PRECONDITIONS = "49";
+
 //	public static final String ATTACHMENT="29" ;		// used in requirement
 //	public static final String URL= "30";				// used in requirement
 //	public static final String IS_MARKED= "32";			// not used 
 	public static final String FLAG_AUTOMATION= "33";
-	
+
 	public static final String SCRIPT_ID= "34";
 	public static final String SCRIPT_NAME= "35";
 	public static final String SCRIPT_PATH= "36";
@@ -81,6 +83,6 @@ public interface ZephyrFieldEnum {
 	public static final String REQUIREMENT_CREATED_BY = "107";
 	public static final String REQUIREMENT_CREATED_ON = "108";
 	
-	public static final String TCR_CATALOG_TREE_NAME = "283";		
-	
+	public static final String TCR_CATALOG_TREE_NAME = "283";
+
 }

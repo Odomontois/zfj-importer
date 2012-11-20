@@ -20,6 +20,7 @@ import com.thed.model._
 import com.thed.zfj.model._
 import com.thed.service.zie.ImportManager
 import java.util.{HashMap, Date, HashSet}
+import org.apache.commons.logging.{LogFactory, Log}
 
 
 // Model
@@ -29,6 +30,7 @@ import java.util.{HashMap, Date, HashSet}
 // Http Request
 
 object JiraService {
+  private val log:Log = LogFactory.getLog(this.getClass);
 	val http = new Http
 	var url_base = "http://localhost:2990/jira/rest"
 	var userName = "admin"
@@ -70,11 +72,22 @@ object JiraService {
 			
 	}
 
-	def getMeta():List[Project] = {
-			val meta = http(getHttpRequest("/api/latest/issue/createmeta?expand=projects.issuetypes.fields").as_!(userName, passwd)  >~ { _.getLines.mkString } )
+  val dummyProject = new Project("-1", "", "Please select project...", null, null)
+  val dummyIssueType = new IssueType("-1", "Please select issueType...", "Dummy", null)
+	def getProjects():List[Project] = {
+			val meta = http(getHttpRequest("/api/latest/project").as_!(userName, passwd)  >~ { _.getLines.mkString } )
 			//val projects = JSON.parseFull(meta).get.asInstanceOf[Map[String, Any]].get("projects").get.asInstanceOf[List[Any]]
-			var projects:List[Project] = (SJSON.in[JiraMetaResponse](meta)).projects
-			projects
+      var projects:List[Project] = SJSON.in[List[Project]](meta)
+      val dummy =
+      projects ::= dummyProject
+      projects
+	}
+
+  def getMeta(projectId:String):List[Project] = {
+			val meta = http(getHttpRequest("/api/latest/issue/createmeta?projectIds="+projectId+"&expand=projects.issuetypes.fields").as_!(userName, passwd)  >~ { _.getLines.mkString } )
+			//val projects = JSON.parseFull(meta).get.asInstanceOf[Map[String, Any]].get("projects").get.asInstanceOf[List[Any]]
+      var projects:List[Project] = (SJSON.in[JiraMetaResponse](meta)).projects
+      projects
 	}
 	
 	def startImport(importJob:ImportJob, importManager:ImportManager):String = {
@@ -83,7 +96,7 @@ object JiraService {
 		importJob.getHistory().toString()
 	}
 
-	def saveTestcase(testcase:Testcase):String = {
+  def saveTestcase(testcase:Testcase):String = {
 		var issue = Map[String, AnyRef]();
 		issue += ("project" -> project)
 		issue += ("issuetype" -> issueType)
@@ -94,8 +107,14 @@ object JiraService {
 			issue += ("assignee" -> new com.thed.zfj.model.User(testcase.getAssignee()))
 		if(testcase.getCreator() != null)
 			issue += ("reporter" -> new com.thed.zfj.model.User(testcase.getCreator()))
-		if(testcase.getPriority() != null)
-			issue += ("priority" -> new Priority(testcase.getPriority()))
+		if(testcase.getPriority() != null){
+          issue += ("priority" -> {
+            if (testcase.getPriority().matches("[+-]?\\d+"))
+              new Priority(testcase.getPriority())
+            else
+              new Priority(null, testcase.getPriority())
+          })
+        }
 		if(testcase.getFixVersions() != null){
 			var versions = List[Version]()
 			testcase.getFixVersions().split(",").foreach{verName => versions ::= new Version(verName)}
@@ -139,10 +158,10 @@ object JiraService {
 	
 	private def saveTestcase(issue:Map[String, AnyRef]):String = {
 		var fields = new String( SJSON.out(Map("fields" -> issue)))
-		println(fields)
+		log.debug(fields)
 		val issueOutput = http(getHttpRequest("/api/latest/issue/").as_!(userName, passwd)  << (fields, "application/json") >~ { _.getLines.mkString } )
 		val issueRes = SJSON.in[LocalIssue](issueOutput)
-		println(issueOutput)
+    log.debug(issueOutput)
 		issueRes.id
 	}
 

@@ -78,6 +78,22 @@ class TestLinkImporterManagerImpl extends AbstractImportManager{
         currentTestCase.setComments(ObjectUtil.htmlToText(getText(xmlr, "summary")))
       }
 
+      case EvElemStart(_, "externalid", _, _) => {
+        findFldConfigAndPopulateCustomField(job.getFieldMap, "testcase.externalId", ObjectUtil.htmlToText(getText(xmlr, "externalId")));
+      }
+
+      case EvElemStart(_, "importance", _, _) => {
+        currentTestCase.setPriority(ObjectUtil.htmlToText(getText(xmlr, "importance")))
+      }
+
+      case EvElemStart(_, "preconditions", _, _) => {
+        findFldConfigAndPopulateCustomField(job.getFieldMap, "testcase.preconditions", ObjectUtil.htmlToText(getText(xmlr, "preconditions")));
+      }
+
+      case EvElemStart(_, "execution_type", _, _) => {
+        findFldConfigAndPopulateCustomField(job.getFieldMap, "testcase.execution_type", ObjectUtil.htmlToText(getText(xmlr, "execution_type")));
+      }
+
       case EvElemStart(_, "custom_field", _, _) =>
         setCustomFieldValue(xmlr, job.getFieldMap)
 
@@ -130,7 +146,7 @@ class TestLinkImporterManagerImpl extends AbstractImportManager{
           job.getHistory.add(new JobHistory(new Date(), "Steps for Issue " + issueId + " created!"))
         }
         catch {
-          case e:Exception => log.fatal("Error in creating testcase, skipping to next", e)
+          case e:Exception => log.fatal("Error in creating testcase, skipping to next" + e.getMessage)
         }
       }
       case EvElemEnd(_, "steps") => {
@@ -185,15 +201,24 @@ class TestLinkImporterManagerImpl extends AbstractImportManager{
     if (currentTestCase.getCustomProperties.containsKey(name)){
       log.warn(">>>>> this will override previous value, pl make sure to append it. ")
     }
+    findFldConfigAndPopulateCustomField(map, name, value);
+  }
+
+  private def findFldConfigAndPopulateCustomField(map:FieldMap, fldName:String, fldValue:String){
     var customFieldName:String = null
     var fldConfig:FieldConfig = null
     //todo - performance warning, do it once
-    map.getFieldMapDetails.foreach(fmapDetail => if (fmapDetail.getMappedField == name) {customFieldName =  fmapDetail.getZephyrField; fldConfig = Constants.fieldConfigs.get(fmapDetail.getZephyrField)})
+    map.getFieldMapDetails.foreach(fmapDetail => if (fmapDetail.getMappedField == fldName) {customFieldName =  fmapDetail.getZephyrField; fldConfig = Constants.fieldConfigs.get(fmapDetail.getZephyrField)})
     if (customFieldName == null){
-      log.error("No mapping found for customField " + name + ", skipping custom field")
+      log.error("No mapping found for customField " + fldName + ", skipping custom field")
       return
     }
-    populateCustomField(currentTestCase, fldConfig, value)
+    //If priority is coming from a custom field.
+    if(fldConfig.getId == ZephyrFieldEnum.PRIORITY){
+      currentTestCase.setPriority(fldValue);
+      return;
+    }
+    populateCustomField(currentTestCase, fldConfig, fldValue)
   }
 
   def cleanUp(importJob: ImportJob):Boolean = {

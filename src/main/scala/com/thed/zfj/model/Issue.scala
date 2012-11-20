@@ -21,7 +21,7 @@ import sjson.json._
 @BeanInfo case class User( name: String) {
 }
 
-@BeanInfo case class Priority( @(JSONProperty @getter)(ignoreIfNull = true)name:String) {
+@BeanInfo case class Priority( @(JSONProperty @getter)(ignoreIfNull = true) id:String, @(JSONProperty @getter)(ignoreIfNull = true) name:String = null) {
 }
 
 @BeanInfo case class Version(  @(JSONProperty @getter)(ignoreIfNull = true)name: String) {
