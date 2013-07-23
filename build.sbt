@@ -2,9 +2,9 @@ import AssemblyKeys._
 
 assemblySettings
 
-name := "zfj-importer"
+name := "zfj-importer "
 
-version := "0.26"
+version := "0.27"
 
 scalaVersion := "2.9.1"
 

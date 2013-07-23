@@ -120,7 +120,7 @@ abstract class BaseImporter extends FlowPanel{
   val btBack = new Button { text = "<- Go Back"; horizontalAlignment = Alignment.Left}
   val btConnect = new Button { text = "Connect"}
   val status = new TextArea("", 3, 50)
-  val tfUrl = new TextField("http://localhost:2990/jira/rest", 20)
+  val tfUrl = new TextField("http://localhost:8080/rest", 20)
   val tfStartingRowNumber = new TextField("2", 5)
   val btSave = new Button("Save")
   val btLoad = new Button("Load")

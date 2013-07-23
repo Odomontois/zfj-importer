@@ -75,7 +75,7 @@ class TestLinkImporterManagerImpl extends AbstractImportManager{
         currentTestCase.setName(getAttributeValue(eventType, "name"))
       }
       case EvElemStart(_, "summary", _, _) => {
-        currentTestCase.setComments(ObjectUtil.htmlToText(getText(xmlr, "summary")))
+        currentTestCase.setDescription(ObjectUtil.htmlToText(getText(xmlr, "summary")))
       }
 
       case EvElemStart(_, "externalid", _, _) => {
