@@ -21,6 +21,16 @@ import com.thed.zfj.model._
 import com.thed.service.zie.ImportManager
 import java.util.{HashMap, Date, HashSet}
 import org.apache.commons.logging.{LogFactory, Log}
+import javax.net.ssl._
+import java.security.cert.X509Certificate
+import com.thed.zfj.model.Priority
+import com.thed.zfj.model.TestStep
+import com.thed.zfj.model.Issue
+import com.thed.zfj.model.Component
+import com.thed.zfj.model.Project
+import com.thed.zfj.model.IssueType
+import com.thed.zfj.model.Version
+import org.apache.http.conn.{ClientConnectionManagerFactory, ClientConnectionManager}
 
 
 // Model
@@ -31,7 +41,7 @@ import org.apache.commons.logging.{LogFactory, Log}
 
 object JiraService {
   private val log:Log = LogFactory.getLog(this.getClass);
-	val http = new Http
+	val http = new Http with HttpsLeniency
 	var url_base = "http://localhost:2990/jira/rest"
 	var userName = "admin"
 	var passwd = "admin"
@@ -175,7 +185,7 @@ object JiraService {
 		//for(val step:TestStep <- steps) {
 			var fields = new String( SJSON.out(step))
 			println(fields + " \n IssueId is:" + issueId)
-			var stepResponse = http(getHttpRequest("/zephyr/latest/teststep/" + issueId).as_!(userName, passwd)  << (fields, "application/json") >~ { _.getLines.mkString } )
+			var stepResponse = http(getHttpRequest("/zephyr/latest/teststep/" + issueId).as_!(userName, passwd) <:< Map("User-Agent" -> "ZFJImporter", "AO-7DEABF" -> java.util.UUID.randomUUID.toString)  << (fields, "application/json") >~ { _.getLines.mkString } )
 			println(stepResponse)
 			stepResponse
 		//}
