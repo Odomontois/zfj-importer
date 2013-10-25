@@ -9,7 +9,7 @@ The Zephyr for JIRA Tests Importer Utility is a Scala+Java based program used in
 Features
 -------- 
 
-- Import Tests from Excel (xls, xlsx) files into JIRA 5.
+- Import Tests from Excel (xls, xlsx) files into JIRA (5 and above).
 
 
 Download
