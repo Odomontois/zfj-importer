@@ -185,7 +185,7 @@ object JiraService {
 		//for(val step:TestStep <- steps) {
 			var fields = new String( SJSON.out(step))
 			println(fields + " \n IssueId is:" + issueId)
-			var stepResponse = http(getHttpRequest("/zephyr/latest/teststep/" + issueId).as_!(userName, passwd) <:< Map("User-Agent" -> "ZFJImporter", "AO-7DEABF" -> java.util.UUID.randomUUID.toString)  << (fields, "application/json") >~ { _.getLines.mkString } )
+			var stepResponse = http(getHttpRequest("/zephyr/latest/teststep/" + issueId).as_!(userName, passwd) <:< Map("User-Agent" -> "ZFJImporter", "AO_7DEABF" -> java.util.UUID.randomUUID.toString, "AO-7DEABF" -> java.util.UUID.randomUUID.toString)  << (fields, "application/json") >~ { _.getLines.mkString } )
 			println(stepResponse)
 			stepResponse
 		//}

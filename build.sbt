@@ -4,7 +4,7 @@ assemblySettings
 
 name := "zfj-importer "
 
-version := "0.28"
+version := "0.29"
 
 scalaVersion := "2.10.2"
 
