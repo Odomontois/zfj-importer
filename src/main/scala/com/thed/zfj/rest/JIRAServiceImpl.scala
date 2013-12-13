@@ -110,7 +110,10 @@ object JiraService {
 		var issue = Map[String, AnyRef]();
 		issue += ("project" -> project)
 		issue += ("issuetype" -> issueType)
-		issue += ("summary" -> testcase.getName())
+    //replace any linefeeds with single spaces
+		issue += ("summary" -> {
+          testcase.getName().replace("\n", " ")
+      })
 		if(testcase.getDescription() != null)
 			issue += ("description" -> testcase.getDescription())
 		if(testcase.getAssignee() != null)
