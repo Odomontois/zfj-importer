@@ -124,8 +124,8 @@ abstract class BaseImporter extends FlowPanel{
   val tfStartingRowNumber = new TextField("2", 5)
   val btSave = new Button("Save")
   val btLoad = new Button("Load")
-  object tfUserName extends TextField{ columns = 5; text="admin"}
-  object tfPassword extends PasswordField{ columns = 5; text="admin"}
+  val tfUserName  = new TextField("admin", 5);
+  val tfPassword = new PasswordField("admin", 5);
 
   val cbProjects = new ComboBox(List[Project](JiraService.dummyProject)){
     renderer = Renderer(_.name)
@@ -138,7 +138,7 @@ abstract class BaseImporter extends FlowPanel{
     Map("name" -> Constants.BY_TESTCASE_NAME_CHANGE, "label" -> "By Testcase name Change"))){
     renderer = Renderer(_.get("label").get)
   }
-  val excelFldPanel= new FlowPanel(FlowPanel.Alignment.Left)(new Label("Discriminator:"), cbDiscriminator, new Label("Starting Row #:"), tfStartingRowNumber)
+  val excelFldPanel= new FlowPanel(FlowPanel.Alignment.Left)(new Label("Discriminator:"), cbDiscriminator, new Label("Starting Row # (0 based):"), tfStartingRowNumber)
   val spreadSheet = new Spreadsheet(15, 2, getTableColumns)
   val importFileName = new TextField{columns=25}
   val importFileButton = new Button {text = "Pick Import File"}
@@ -212,7 +212,8 @@ abstract class BaseImporter extends FlowPanel{
       for(data <- spreadSheet.tableModel.rowData){
         fieldMapDetails.add(new FieldMapDetail(data(2).asInstanceOf[String], data(1).asInstanceOf[String]))
       }
-      val fieldMap = new FieldMap(1l, "First Map", "description", new java.util.Date(), ".csv", tfStartingRowNumber.text.toInt, cbDiscriminator.selection.item.get("name").get.toString(), fieldMapDetails, "testcase")
+      
+      val fieldMap = new FieldMap(1l, "First Map", "description", new java.util.Date(), ".csv", tfStartingRowNumber.text.toInt, cbDiscriminator.selection.item.get("name").get, fieldMapDetails, "testcase")
       val jobHistories: HashSet[JobHistory] = new java.util.HashSet[JobHistory](){
         val log = LogFactory.getLog(this.getClass)
         case class Append(msg: String)

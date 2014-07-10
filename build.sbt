@@ -8,14 +8,14 @@ version := "0.29"
 
 scalaVersion := "2.10.2"
 
-resolvers += "Local Maven Repository" at "file:///Users/smangal/.m2/repository"
+//resolvers += "Local Maven Repository" at "file:///Users/smangal/.m2/repository"
 
 resolvers += "Pentaho Repository" at "http://repository.pentaho.org/artifactory/repo/"
 
 libraryDependencies ++= Seq(
   "net.databinder" %% "dispatch-http" % "0.8.8",
   "net.debasishg" %% "sjson" % "0.19",
-  "org.apache.poi" % "poi" % "3.8",
+  "org.apache.poi" % "poi" % "3.8" withSources(),
   "org.apache.poi" % "poi-scratchpad" % "3.8",
   "org.apache.poi" % "poi-ooxml" % "3.8",
   "commons-vfs" % "commons-vfs" % "2.0-20090205",

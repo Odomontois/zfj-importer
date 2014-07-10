@@ -9,8 +9,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import com.thed.model.*;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -357,14 +359,28 @@ public abstract class AbstractImportManager implements ImportManager {
 	newObj.copyFrom(srcFile, fs);
 }
 	
-
-	protected short converField(String filedNumber) {
-		return (short) (CellReference.convertColStringToIndex(filedNumber));
+	protected int[] converField(String filedNumber) {
+		
+		try {
+			if (StringUtils.isEmpty(filedNumber)) {
+				return null;
+			}
+			CellReference cellReference = new CellReference(filedNumber);
+			return new int[] {cellReference.getCol(), cellReference.getRow()};
+		} catch (Exception iae) {
+			int colIndex = CellReference.convertColStringToIndex(filedNumber);
+			if (colIndex < 0 ) {
+				return null; // return null so validation works
+			}
+			return new int[] {colIndex , -1};
+		}
+		
+		
 		
 	}
 
 	protected boolean isRowNull(Row row) {
-		boolean isNull = false;
+		boolean isNull = true;
 		if (row == null) {
 			isNull = true;
 		} else {
@@ -374,7 +390,7 @@ public abstract class AbstractImportManager implements ImportManager {
 				if (cell == null || cell.getCellType() == Cell.CELL_TYPE_BLANK) {
 					isNull = true;
 				} else {
-					if (cell.getCellType() == Cell.CELL_TYPE_STRING && "".equalsIgnoreCase(cell.getStringCellValue())) {
+					if (cell.getCellType() == Cell.CELL_TYPE_STRING && StringUtils.isBlank(cell.getStringCellValue())) {
 						isNull = true;
 					} else {
 						isNull = false;
@@ -486,7 +502,7 @@ public abstract class AbstractImportManager implements ImportManager {
 	public static class ColumnValueHolder {
 		
 		/* excel sheet column index */
-		private short columnIndex ;
+		private int[] cellRef ;
 		
 		/* column value */
 		private String value ;
@@ -502,12 +518,8 @@ public abstract class AbstractImportManager implements ImportManager {
 		/* if it is a list type custom field, holds preference values */ 
 		private Map<String, String> preferenceMap ;
 
-		public short getColumnIndex() {
-			return columnIndex;
-		}
-
-		public void setColumnIndex(short columnIndex) {
-			this.columnIndex = columnIndex;
+		public int getColumnIndex() {
+			return cellRef == null ? -1 : cellRef[0];
 		}
 
 		public String getValue() {
@@ -548,6 +560,18 @@ public abstract class AbstractImportManager implements ImportManager {
 
 		public void setPreferenceMap(Map<String, String> preferenceMap) {
 			this.preferenceMap = preferenceMap;
+		}
+
+		public void setCellRef(int[] cellRef) {
+			this.cellRef = cellRef;
+			if (cellRef != null && cellRef.length != 2) {
+				throw new IllegalArgumentException("Cell ref should be [column,row]");
+			}
+			
+		}
+
+		public int[] getCellRef() {
+			return cellRef;
 		}
 
 		
