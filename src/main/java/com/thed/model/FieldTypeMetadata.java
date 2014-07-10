@@ -1,6 +1,5 @@
 package com.thed.model;
 
-import java.util.List;
 
 /**
  * Holds custom field type meta data.

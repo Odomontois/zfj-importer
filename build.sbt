@@ -15,9 +15,9 @@ resolvers += "Pentaho Repository" at "http://repository.pentaho.org/artifactory/
 libraryDependencies ++= Seq(
   "net.databinder" %% "dispatch-http" % "0.8.8",
   "net.debasishg" %% "sjson" % "0.19",
-  "org.apache.poi" % "poi" % "3.8" withSources(),
-  "org.apache.poi" % "poi-scratchpad" % "3.8",
-  "org.apache.poi" % "poi-ooxml" % "3.8",
+  "org.apache.poi" % "poi" % "3.+" withSources(),
+  "org.apache.poi" % "poi-scratchpad" % "3.+",
+  "org.apache.poi" % "poi-ooxml" % "3.+",
   "commons-vfs" % "commons-vfs" % "2.0-20090205",
   "commons-lang" % "commons-lang" % "2.6",
   "commons-logging" % "commons-logging" % "1.1.1",

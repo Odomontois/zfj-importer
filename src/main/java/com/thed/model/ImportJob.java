@@ -3,8 +3,11 @@ package com.thed.model;
 
 
 import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.regex.Pattern;
 
+@SuppressWarnings("serial")
 public class ImportJob  implements java.io.Serializable {
 
     private Long id;
@@ -35,6 +38,8 @@ public class ImportJob  implements java.io.Serializable {
     private  String importEntityType;
         
     private Set<JobHistory> history  ;
+
+		private Pattern sheetFilter;
   
     /**
 	 * @param id
@@ -48,7 +53,7 @@ public class ImportJob  implements java.io.Serializable {
 	 * @param history
 	 */
 
-    public ImportJob(Long id, String name, String folder, String fileExtension,	Date scheduledDate, String status, Long treeId,FieldMap fieldMap, Set<JobHistory> history,String importEntityType) {
+    public ImportJob(Long id, String name, String folder, String fileExtension,	Date scheduledDate, String status, Long treeId,FieldMap fieldMap, Set<JobHistory> history,String importEntityType, String sheetFilter) {
 		super();
 		this.id = id;
 		this.name = name;
@@ -58,8 +63,9 @@ public class ImportJob  implements java.io.Serializable {
 		this.status = status;
 		this.treeId = treeId;
 		this.fieldMap = fieldMap;
-		this.history = history;
+		this.history = new LinkedHashSet<JobHistory>(history);
 		this.importEntityType=importEntityType;
+		this.sheetFilter = Pattern.compile(sheetFilter); 
 	}
 
 	public ImportJob() {
@@ -224,6 +230,9 @@ public class ImportJob  implements java.io.Serializable {
 		this.importEntityType = importEntityType;
 	}
 	
+	public Pattern getSheetFilter() {
+		return sheetFilter;
+	}
 }
 
 

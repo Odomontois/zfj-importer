@@ -16,11 +16,11 @@
   <classpathentry sourcepath="/Users/poxenha/.ivy2/cache/net.databinder/dispatch-json_2.10/srcs/dispatch-json_2.10-0.8.9-sources.jar" kind="lib" path="/Users/poxenha/.ivy2/cache/net.databinder/dispatch-json_2.10/jars/dispatch-json_2.10-0.8.9.jar"/>
   <classpathentry sourcepath="/Users/poxenha/.ivy2/cache/commons-io/commons-io/srcs/commons-io-1.4-sources.jar" kind="lib" path="/Users/poxenha/.ivy2/cache/commons-io/commons-io/jars/commons-io-1.4.jar"/>
   <classpathentry sourcepath="/Users/poxenha/.ivy2/cache/org.objenesis/objenesis/srcs/objenesis-1.2-sources.jar" kind="lib" path="/Users/poxenha/.ivy2/cache/org.objenesis/objenesis/jars/objenesis-1.2.jar"/>
-  <classpathentry sourcepath="/Users/poxenha/.ivy2/cache/org.apache.poi/poi/srcs/poi-3.8-sources.jar" kind="lib" path="/Users/poxenha/.ivy2/cache/org.apache.poi/poi/jars/poi-3.8.jar"/>
+  <classpathentry sourcepath="/Users/poxenha/.ivy2/cache/org.apache.poi/poi/srcs/poi-3.10-FINAL-sources.jar" kind="lib" path="/Users/poxenha/.ivy2/cache/org.apache.poi/poi/jars/poi-3.10-FINAL.jar"/>
   <classpathentry sourcepath="/Users/poxenha/.ivy2/cache/commons-codec/commons-codec/srcs/commons-codec-1.5-sources.jar" kind="lib" path="/Users/poxenha/.ivy2/cache/commons-codec/commons-codec/jars/commons-codec-1.5.jar"/>
-  <classpathentry sourcepath="/Users/poxenha/.ivy2/cache/org.apache.poi/poi-scratchpad/srcs/poi-scratchpad-3.8-sources.jar" kind="lib" path="/Users/poxenha/.ivy2/cache/org.apache.poi/poi-scratchpad/jars/poi-scratchpad-3.8.jar"/>
-  <classpathentry sourcepath="/Users/poxenha/.ivy2/cache/org.apache.poi/poi-ooxml/srcs/poi-ooxml-3.8-sources.jar" kind="lib" path="/Users/poxenha/.ivy2/cache/org.apache.poi/poi-ooxml/jars/poi-ooxml-3.8.jar"/>
-  <classpathentry kind="lib" path="/Users/poxenha/.ivy2/cache/org.apache.poi/poi-ooxml-schemas/jars/poi-ooxml-schemas-3.8.jar"/>
+  <classpathentry sourcepath="/Users/poxenha/.ivy2/cache/org.apache.poi/poi-scratchpad/srcs/poi-scratchpad-3.10-FINAL-sources.jar" kind="lib" path="/Users/poxenha/.ivy2/cache/org.apache.poi/poi-scratchpad/jars/poi-scratchpad-3.10-FINAL.jar"/>
+  <classpathentry sourcepath="/Users/poxenha/.ivy2/cache/org.apache.poi/poi-ooxml/srcs/poi-ooxml-3.10-FINAL-sources.jar" kind="lib" path="/Users/poxenha/.ivy2/cache/org.apache.poi/poi-ooxml/jars/poi-ooxml-3.10-FINAL.jar"/>
+  <classpathentry kind="lib" path="/Users/poxenha/.ivy2/cache/org.apache.poi/poi-ooxml-schemas/jars/poi-ooxml-schemas-3.10-FINAL.jar"/>
   <classpathentry kind="lib" path="/Users/poxenha/.ivy2/cache/org.apache.xmlbeans/xmlbeans/jars/xmlbeans-2.3.0.jar"/>
   <classpathentry sourcepath="/Users/poxenha/.ivy2/cache/stax/stax-api/srcs/stax-api-1.0.1-sources.jar" kind="lib" path="/Users/poxenha/.ivy2/cache/stax/stax-api/jars/stax-api-1.0.1.jar"/>
   <classpathentry sourcepath="/Users/poxenha/.ivy2/cache/dom4j/dom4j/srcs/dom4j-1.6.1-sources.jar" kind="lib" path="/Users/poxenha/.ivy2/cache/dom4j/dom4j/jars/dom4j-1.6.1.jar"/>

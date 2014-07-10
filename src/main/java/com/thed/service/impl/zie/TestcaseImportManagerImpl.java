@@ -3,9 +3,13 @@ package com.thed.service.impl.zie;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
-import com.thed.model.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -19,11 +23,17 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 
+import com.thed.model.FieldMap;
+import com.thed.model.FieldMapDetail;
+import com.thed.model.FieldTypeMetadata;
+import com.thed.model.ImportJob;
+import com.thed.model.JobHistory;
+import com.thed.model.TestStepDetailBase;
+import com.thed.model.Testcase;
+import com.thed.model.ZephyrFieldEnum;
 import com.thed.util.Constants;
-import com.thed.util.ObjectUtil;
-
-import com.thed.zfj.rest.*;
 import com.thed.zfj.model.*;
+import com.thed.zfj.rest.*;
 
 public class TestcaseImportManagerImpl extends AbstractImportManager {
 
@@ -61,7 +71,7 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 			// Start processing the sheet
 			Set<FieldMapDetail> fieldMapDetails = map.getFieldMapDetails();
 
-			int[] nameColumn = null, stepsColumn = null, resultsColumn = null, externalIdColumn = null;
+			int[] nameColumn = null, stepsColumn = null, resultsColumn = null;
 			for (Object obj : fieldMapDetails.toArray()) {
 				FieldMapDetail fieldMapDetail = (FieldMapDetail) obj;
 				if (ZephyrFieldEnum.NAME.equalsIgnoreCase(fieldMapDetail
@@ -73,10 +83,7 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 				} else if (ZephyrFieldEnum.RESULT.equalsIgnoreCase(fieldMapDetail
 						.getZephyrField())) {
 					resultsColumn = converField(fieldMapDetail.getMappedField());
-				} else if (ZephyrFieldEnum.EXTERNAL_ID.equalsIgnoreCase(fieldMapDetail
-						.getZephyrField())) {
-					externalIdColumn = converField(fieldMapDetail.getMappedField());
-				}
+				} 
 			}// for end
 
 			boolean isNameExist = false, isStepsExist = false, isExpectedresultsExist = false, blockStart = false, isTestcaseNameExist = false, isLastRow = false;
@@ -510,7 +517,6 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 			System.out.println("Columns " + uniqueColumn);
 			ArrayList<TestStepDetailBase> testsValue = new ArrayList<TestStepDetailBase>();
 			Row row = null;
-			Cell cell = null;
 			String uniqueId = new String();
 			boolean blockStart = false;
 
@@ -597,7 +603,6 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 		if (jobHistoryList == null) {
 			jobHistoryList = new HashSet<JobHistory>(0);
 		}
-		JobHistory jobHistory = null;
 		int oldJobHistorySize = jobHistoryList.size();
 
 		try {
@@ -816,13 +821,6 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 			initializeImport(importJob);
 			FieldMap map = importJob.getFieldMap();
 
-			// fs = new POIFSFileSystem(fis);
-			Workbook wb = WorkbookFactory.create(fis);
-			// for(int sheetNo=0;sheetNo<wb.getNumberOfSheets();sheetNo++){
-			Sheet sheet = wb.getSheetAt(0);
-			FormulaEvaluator evaluator = wb.getCreationHelper()
-					.createFormulaEvaluator();// As a best practice, evaluator should be
-																		// one per sheet
 			Set<FieldMapDetail> fieldMapDetails = map.getFieldMapDetails();
 
 			/*
@@ -832,35 +830,46 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 			Map<String, FieldTypeMetadata> metadata = Constants.fieldTypeMetadataMap;
 			initializeColumns(fieldMapDetails, columns, metadata);
 
-			int startPoint = map.getStartingRowNumber() - 1;
-			int lastRow = sheet.getLastRowNum() + EXTRA_ROWS_IN_END;
-			/*
-			 * if(!isSheetEmpty(lastRow)){ continue; }
-			 */
-			// Start processing the sheet
-			// Initializing the fields to null
-			ArrayList<TestStepDetailBase> testsValue = new ArrayList<TestStepDetailBase>();
-			Row row = null;
-			Cell cell = null;
-			boolean blockFlag = false;
-			for (int i = startPoint; i < lastRow; i++) {
-				row = (Row) sheet.getRow(i);
-				if (isRowNull(row)) {
-					if (!blockFlag) {
-						saveTestCase(importJob, testsValue, userId, columns, i - 1);
-						resetValues(columns);
-						testsValue = new ArrayList<TestStepDetailBase>();
-					}
-					blockFlag = true;
-				} else {
-					blockFlag = false;
-
-					/* process columns */
-					processColumns(columns, evaluator, row, testsValue, i);
-
+			// fs = new POIFSFileSystem(fis);
+			Workbook wb = WorkbookFactory.create(fis);
+			for(int sheetNo=0;sheetNo<wb.getNumberOfSheets();sheetNo++){
+				Sheet sheet = wb.getSheetAt(sheetNo);
+				if (skipSheet(sheet, importJob)) {
+					continue;
 				}
-			}// end of processing
-
+				
+				FormulaEvaluator evaluator = wb.getCreationHelper()
+						.createFormulaEvaluator();// As a best practice, evaluator should be
+																			// one per sheet
+	
+				int startPoint = map.getStartingRowNumber() - 1;
+				int lastRow = sheet.getLastRowNum() + EXTRA_ROWS_IN_END;
+				/*
+				 * if(!isSheetEmpty(lastRow)){ continue; }
+				 */
+				// Start processing the sheet
+				// Initializing the fields to null
+				ArrayList<TestStepDetailBase> testsValue = new ArrayList<TestStepDetailBase>();
+				Row row = null;
+				boolean blockFlag = false;
+				for (int i = startPoint; i < lastRow; i++) {
+					row = (Row) sheet.getRow(i);
+					if (isRowNull(row)) {
+						if (!blockFlag) {
+							saveTestCase(importJob, testsValue, userId, columns, i - 1);
+							resetValues(columns);
+							testsValue = new ArrayList<TestStepDetailBase>();
+						}
+						blockFlag = true;
+					} else {
+						blockFlag = false;
+	
+						/* process columns */
+						processColumns(columns, evaluator, row, testsValue, i);
+	
+					}
+				}// end of processing
+			}
 			truncateUpdate(importJob, columns);
 			return true;
 		} catch (Exception e) {
@@ -878,6 +887,10 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 				return false;
 			}
 		}
+	}
+
+	private boolean skipSheet(Sheet sheet, ImportJob importJob) {
+		return !importJob.getSheetFilter().matcher(sheet.getSheetName()).matches();
 	}
 
 	public boolean cleanUp(ImportJob importJob) throws Exception {
@@ -930,7 +943,6 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 		 * Lets see if user wants to import creatorId, if not, we 'll default it to
 		 * the person performing import
 		 */
-		String createdByValue = null;
 		if (columns.get(ZephyrFieldEnum.CREATED_BY) != null) {
 			testcase.setCreator(columns.get(ZephyrFieldEnum.CREATED_BY).getValue());
 		}
