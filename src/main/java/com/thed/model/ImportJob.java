@@ -1,47 +1,56 @@
 package com.thed.model;
-// Generated Jun 29, 2007 8:10:35 PM by Hibernate Tools 3.2.0.b9
 
+// Generated Jun 29, 2007 8:10:35 PM by Hibernate Tools 3.2.0.b9
 
 import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import scala.Option;
+import scala.runtime.AbstractFunction1;
+
 @SuppressWarnings("serial")
-public class ImportJob  implements java.io.Serializable {
+public class ImportJob implements java.io.Serializable {
 
-    private Long id;
+	private Long id;
 
-    private String name;
-    
-    private String folder;
-    
-    private String fileExtension;
-    
-    private Date scheduledDate;
-        
-    private String status;
+	private String name;
 
-    /*@Column(name="discriminator", nullable = true)
-    private String discriminator;*/
+	private String folder;
 
-    private User creator;
-    
-/*  @ManyToOne(fetch=FetchType.EAGER)
-    @JoinColumn(name = "tcrCatalogtree_id", nullable = true)
-    private TCRCatalogTree tcrCatalogTree;*/
-    
-    private Long treeId;
-    
-    private FieldMap fieldMap;
-    
-    private  String importEntityType;
-        
-    private Set<JobHistory> history  ;
+	private String fileExtension;
 
-		private Pattern sheetFilter;
-  
-    /**
+	private Date scheduledDate;
+
+	private String status;
+
+	/*
+	 * @Column(name="discriminator", nullable = true) private String
+	 * discriminator;
+	 */
+
+	private User creator;
+
+	/*
+	 * @ManyToOne(fetch=FetchType.EAGER)
+	 * 
+	 * @JoinColumn(name = "tcrCatalogtree_id", nullable = true) private
+	 * TCRCatalogTree tcrCatalogTree;
+	 */
+
+	private Long treeId;
+
+	private FieldMap fieldMap;
+
+	private String importEntityType;
+
+	private Set<JobHistory> history;
+
+	private Option<Pattern> sheetFilter;
+	private boolean attachFile = false;
+	
+	/**
 	 * @param id
 	 * @param folder
 	 * @param fileExtension
@@ -53,7 +62,10 @@ public class ImportJob  implements java.io.Serializable {
 	 * @param history
 	 */
 
-    public ImportJob(Long id, String name, String folder, String fileExtension,	Date scheduledDate, String status, Long treeId,FieldMap fieldMap, Set<JobHistory> history,String importEntityType, String sheetFilter) {
+	public ImportJob(Long id, String name, String folder, String fileExtension,
+			Date scheduledDate, String status, Long treeId, FieldMap fieldMap,
+			Set<JobHistory> history, String importEntityType,
+			Option<String> sheetFilter) {
 		super();
 		this.id = id;
 		this.name = name;
@@ -64,15 +76,22 @@ public class ImportJob  implements java.io.Serializable {
 		this.treeId = treeId;
 		this.fieldMap = fieldMap;
 		this.history = new LinkedHashSet<JobHistory>(history);
-		this.importEntityType=importEntityType;
-		this.sheetFilter = Pattern.compile(sheetFilter); 
+		this.importEntityType = importEntityType;
+		this.sheetFilter = sheetFilter
+				.map(new AbstractFunction1<String, Pattern>() {
+
+					@Override
+					public Pattern apply(String arg0) {
+						return Pattern.compile(arg0);
+					}
+
+				});
+
 	}
 
 	public ImportJob() {
-    }
+	}
 
-	
-	
 	/**
 	 * @return the fileExtension
 	 */
@@ -81,7 +100,8 @@ public class ImportJob  implements java.io.Serializable {
 	}
 
 	/**
-	 * @param fileExtension the fileExtension to set
+	 * @param fileExtension
+	 *          the fileExtension to set
 	 */
 	public void setFileExtension(String fileExtension) {
 		this.fileExtension = fileExtension;
@@ -95,7 +115,8 @@ public class ImportJob  implements java.io.Serializable {
 	}
 
 	/**
-	 * @param folder the folder to set
+	 * @param folder
+	 *          the folder to set
 	 */
 	public void setFolder(String folder) {
 		this.folder = folder;
@@ -109,7 +130,8 @@ public class ImportJob  implements java.io.Serializable {
 	}
 
 	/**
-	 * @param history the history to set
+	 * @param history
+	 *          the history to set
 	 */
 	public void setHistory(Set<JobHistory> history) {
 		this.history = history;
@@ -123,7 +145,8 @@ public class ImportJob  implements java.io.Serializable {
 	}
 
 	/**
-	 * @param id the id to set
+	 * @param id
+	 *          the id to set
 	 */
 	public void setId(Long id) {
 		this.id = id;
@@ -137,7 +160,8 @@ public class ImportJob  implements java.io.Serializable {
 	}
 
 	/**
-	 * @param scheduledDate the scheduledDate to set
+	 * @param scheduledDate
+	 *          the scheduledDate to set
 	 */
 	public void setScheduledDate(Date scheduledDate) {
 		this.scheduledDate = scheduledDate;
@@ -151,12 +175,12 @@ public class ImportJob  implements java.io.Serializable {
 	}
 
 	/**
-	 * @param status the status to set
+	 * @param status
+	 *          the status to set
 	 */
 	public void setStatus(String status) {
 		this.status = status;
 	}
-
 
 	/**
 	 * @return the treeId
@@ -166,7 +190,8 @@ public class ImportJob  implements java.io.Serializable {
 	}
 
 	/**
-	 * @param treeId the treeId to set
+	 * @param treeId
+	 *          the treeId to set
 	 */
 	public void setTreeId(Long treeId) {
 		this.treeId = treeId;
@@ -180,7 +205,8 @@ public class ImportJob  implements java.io.Serializable {
 	}
 
 	/**
-	 * @param fieldMap the fieldMap to set
+	 * @param fieldMap
+	 *          the fieldMap to set
 	 */
 	public void setFieldMap(FieldMap fieldMap) {
 		this.fieldMap = fieldMap;
@@ -194,19 +220,12 @@ public class ImportJob  implements java.io.Serializable {
 	}
 
 	/**
-	 * @param name the name to set
+	 * @param name
+	 *          the name to set
 	 */
 	public void setName(String name) {
 		this.name = name;
 	}
-
-	/*public String getDiscriminator() {
-		return discriminator;
-	}
-
-	public void setDiscriminator(String discriminator) {
-		this.discriminator = discriminator;
-	}*/
 
 	public User getCreator() {
 		return creator;
@@ -224,15 +243,24 @@ public class ImportJob  implements java.io.Serializable {
 	}
 
 	/**
-	 * @param importEntityType the importEntityType to set
+	 * @param importEntityType
+	 *          the importEntityType to set
 	 */
 	public void setImportEntityType(String importEntityType) {
 		this.importEntityType = importEntityType;
 	}
-	
-	public Pattern getSheetFilter() {
+
+	public Option<Pattern> getSheetFilter() {
 		return sheetFilter;
 	}
+
+	public boolean isAttachFile() {
+		return attachFile;
+	}
+
+	public void setAttachFile(boolean attachFile) {
+		this.attachFile = attachFile;
+	}
+	
+	
 }
-
-

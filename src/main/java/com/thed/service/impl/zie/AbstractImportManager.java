@@ -1,5 +1,7 @@
 package com.thed.service.impl.zie;
 
+import static com.thed.util.Discriminator.*;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -39,6 +41,7 @@ import com.thed.model.Preference;
 import com.thed.model.Testcase;
 import com.thed.service.zie.ImportManager;
 import com.thed.util.Constants;
+import com.thed.util.Discriminator;
 import com.thed.util.ObjectUtil;
 
 public abstract class AbstractImportManager implements ImportManager {
@@ -149,16 +152,17 @@ public abstract class AbstractImportManager implements ImportManager {
 	public boolean importSingleFiles(FileObject file, ImportJob importJob,
 			String action, Long userId) throws Exception {
 		boolean isValidFile = false;
-		if (importJob.getFieldMap().getDiscriminator()
-				.equalsIgnoreCase(Constants.BY_EMPTY_ROW)) {
-			isValidFile = validateFileByEmptyRow(file, importJob);
+		Discriminator discriminator = importJob.getFieldMap().getDiscriminator();
+		if (discriminator == BY_EMPTY_ROW) {
+			isValidFile = validateFileByEmptyRow(file, importJob, false);
 		}
-		if (importJob.getFieldMap().getDiscriminator()
-				.equalsIgnoreCase(Constants.BY_ID_CHANGE)) {
+		if (discriminator == BY_SHEET) {
+			isValidFile = validateFileByEmptyRow(file, importJob, true);
+		}
+		if (discriminator == BY_ID_CHANGE) {
 			isValidFile = validateFileByIdChange(file, importJob);
 		}
-		if (importJob.getFieldMap().getDiscriminator()
-				.equalsIgnoreCase(Constants.BY_TESTCASE_NAME_CHANGE)) {
+		if (discriminator == BY_TESTCASE_NAME_CHANGE) {
 			isValidFile = validateFileByNameChange(file, importJob);
 		}
 		boolean isFileProcessed = false;
@@ -168,16 +172,15 @@ public abstract class AbstractImportManager implements ImportManager {
 			importJob.setStatus(Constants.IMPORT_JOB_NORMALIZATION_SUCCESS);
 			addJobHistory(importJob, file.getName() + " normalization success..!");
 
-			if (importJob.getFieldMap().getDiscriminator()
-					.equalsIgnoreCase(Constants.BY_EMPTY_ROW)) {
-				isFileProcessed = importFileByEmptyRow(file, importJob, userId);
+			if (discriminator == BY_EMPTY_ROW) {
+				isFileProcessed = importFileByEmptyRow(file, importJob, userId, false);
+			} else if (discriminator == BY_SHEET) {
+				isFileProcessed = importFileByEmptyRow(file, importJob, userId, true);
 			}
-			if (importJob.getFieldMap().getDiscriminator()
-					.equalsIgnoreCase(Constants.BY_ID_CHANGE)) {
+			if (discriminator == BY_ID_CHANGE) {
 				isFileProcessed = importFileById(file, importJob, userId);
 			}
-			if (importJob.getFieldMap().getDiscriminator()
-					.equalsIgnoreCase(Constants.BY_TESTCASE_NAME_CHANGE)) {
+			if (discriminator == BY_TESTCASE_NAME_CHANGE) {
 				isFileProcessed = importFileForByName(file, importJob, userId);
 			}
 		} else {
@@ -218,7 +221,7 @@ public abstract class AbstractImportManager implements ImportManager {
 	}
 
 	protected boolean importFileByEmptyRow(FileObject file, ImportJob importJob,
-			Long userId) throws IOException {
+			Long userId, boolean stopAfterFirst) throws IOException {
 		// TODO Auto-generated method stub
 		return false;
 	}
@@ -235,7 +238,7 @@ public abstract class AbstractImportManager implements ImportManager {
 		return false;
 	}
 
-	protected boolean validateFileByEmptyRow(FileObject file, ImportJob importJob)
+	protected boolean validateFileByEmptyRow(FileObject file, ImportJob importJob, boolean stopAfterFirst)
 			throws IOException {
 		// TODO Auto-generated method stub
 		return false;

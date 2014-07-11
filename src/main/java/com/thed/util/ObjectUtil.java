@@ -7,14 +7,10 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Reader;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.swing.text.html.HTML;
 import javax.swing.text.html.HTMLEditorKit;
@@ -22,10 +18,6 @@ import javax.swing.text.html.parser.ParserDelegator;
 
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
-
-import com.thed.util.Constants;
-import com.thed.model.Preference;
-import com.thed.model.TestStepDetailBase;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 

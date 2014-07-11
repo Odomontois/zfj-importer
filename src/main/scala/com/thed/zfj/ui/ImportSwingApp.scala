@@ -20,6 +20,8 @@ import java.util.{ AbstractMap, HashSet, HashMap }
 import scala.Array
 import java.io.File
 import javax.swing.JFileChooser
+import dispatch.classic.StatusCode
+import com.thed.util.Discriminator
 
 object ImportSwingApp extends SimpleSwingApplication {
 
@@ -28,7 +30,7 @@ object ImportSwingApp extends SimpleSwingApplication {
     val btExcel = new Button { text = "EXCEL" }
     val btXML = new Button { text = "XML" }
     var mainImportPanel: BaseImporter = null;
-    preferredSize = new Dimension(800, 700);
+    preferredSize = new Dimension(800, 800);
     val bp = new BoxPanel(Orientation.Vertical) {
       contents += btExcel
       contents += btXML
@@ -116,7 +118,7 @@ object XMLImporter extends BaseImporter {
 }
 
 abstract class BaseImporter extends FlowPanel {
-  val btImport = new Button { text = "Start Import"; horizontalAlignment = Alignment.Center }
+  val btImport = new Button { text = "Start Import"; horizontalAlignment = Alignment.Center; enabled = false }
   val btBack = new Button { text = "<- Go Back"; horizontalAlignment = Alignment.Left }
   val btConnect = new Button { text = "Connect" }
   val status = new TextArea("", 3, 50)
@@ -127,27 +129,38 @@ abstract class BaseImporter extends FlowPanel {
   val btLoad = new Button("Load")
   val tfUserName = new TextField("admin", 5);
   val tfPassword = new PasswordField("admin", 5);
-
+  val chkAttachFile = new CheckBox()
   val cbProjects = new ComboBox(List[Project](JiraService.dummyProject)) {
     renderer = Renderer(_.name)
+    enabled = false
   }
   val cbissueType = new ComboBox(List[IssueType](JiraService.dummyIssueType)) {
     renderer = Renderer(_.name)
+    enabled = false
   }
-  var cbDiscriminator = new ComboBox(List[Map[String, String]](Map("name" -> Constants.BY_EMPTY_ROW, "label" -> "By Emptry Row"),
-    Map("name" -> Constants.BY_ID_CHANGE, "label" -> "By ID Change"),
-    Map("name" -> Constants.BY_TESTCASE_NAME_CHANGE, "label" -> "By Testcase name Change"))) {
-    renderer = Renderer(_.get("label").get)
+  var cbDiscriminator = new ComboBox(List[Pair[Discriminator, String]](
+      Pair(Discriminator.BY_SHEET, "By Sheet"),
+      Pair(Discriminator.BY_EMPTY_ROW, "By Empty Row"),
+    Pair(Discriminator.BY_ID_CHANGE, "By ID Change"),
+    Pair(Discriminator.BY_TESTCASE_NAME_CHANGE, "By Testcase name Change"))) {
+    renderer = Renderer(_._2)
   }
   val excelFldPanel = new FlowPanel(FlowPanel.Alignment.Left)() {
     contents += new Label("Discriminator:")
     contents += cbDiscriminator
     contents += new Label("Starting Row #:")
     contents += tfStartingRowNumber
+  }
+  val chkImportAllSheets = new CheckBox()
+  tfSheetFilter.enabled = false
+  val excelFldPanel2 = new FlowPanel(FlowPanel.Alignment.Left)() {
+    contents += new Label("Import all sheets:")
+    contents += chkImportAllSheets
     contents += new Label("Sheet Filter:")
     contents += tfSheetFilter
-
   }
+  
+      
   val spreadSheet = new Spreadsheet(15, 2, getTableColumns)
   val importFileName = new TextField { columns = 25 }
   val importFileButton = new Button { text = "Pick Import File" }
@@ -166,6 +179,11 @@ abstract class BaseImporter extends FlowPanel {
     contents += new FlowPanel(FlowPanel.Alignment.Left)(
       new Label("Project: "), cbProjects, new Label("Issue Type: "), cbissueType)
     contents += excelFldPanel
+    contents += excelFldPanel2
+    
+   
+    contents += new FlowPanel(FlowPanel.Alignment.Left)(
+      new Label("Attach worksheet to issue"), chkAttachFile )
     contents += new FlowPanel(FlowPanel.Alignment.Left)(
       importFileName, importFileButton, importFolderButton /*, btSave, btLoad*/ )
     contents += spreadSheet
@@ -173,14 +191,27 @@ abstract class BaseImporter extends FlowPanel {
     contents += new ScrollPane(status)
   }
   listenTo(btImport, btConnect, tfUserName, tfPassword, importFileButton,	importFolderButton, cbProjects.selection, cbissueType.selection, btSave, btLoad)
-
+  listenTo(chkImportAllSheets)
   reactions += {
     case ButtonClicked(`btConnect`) =>
       JiraService.url_base = tfUrl.text
       JiraService.userName = tfUserName.text
       JiraService.passwd = tfPassword.password.mkString
-      val res = JiraService.getProjects();
-      cbProjects.peer.setModel(ComboBox.newConstantModel(res))
+      try {
+	      val res = JiraService.getProjects();
+	      cbProjects.peer.setModel(ComboBox.newConstantModel(res))
+	      cbProjects.enabled = true;  
+      } catch  {
+        case e: StatusCode => {
+          cbProjects.enabled = false;
+        	Dialog.showMessage(this, "Unexpected response code: " + e.code, "Error fetching projects", Dialog.Message.Error)
+        }
+        case e: Exception => {
+          cbProjects.enabled = false;
+        	Dialog.showMessage(this, e.getMessage(), "Error fetching projects", Dialog.Message.Error)
+        }
+      }
+      
     case EditDone(`tfUserName`) =>
       println(tfUserName.text)
     case EditDone(`tfPassword`) =>
@@ -188,11 +219,24 @@ abstract class BaseImporter extends FlowPanel {
     case SelectionChanged(`cbProjects`) =>
       println("Project changed " + cbProjects.selection.item.name)
       if (cbProjects.selection.item.id != "-1") {
-        var issueTypes = JiraService.getMeta(cbProjects.selection.item.id).get(0).issuetypes
-        issueTypes ::= JiraService.dummyIssueType
-        cbissueType.peer.setModel(ComboBox.newConstantModel(issueTypes))
+        try {
+	        var issueTypes = JiraService.getMeta(cbProjects.selection.item.id).get(0).issuetypes
+	        issueTypes ::= JiraService.dummyIssueType
+	        cbissueType.peer.setModel(ComboBox.newConstantModel(issueTypes))
+	        cbissueType.enabled = true;
+        } catch {
+          case e: StatusCode => {
+	          cbissueType.enabled = true;
+	        	Dialog.showMessage(this, "Unexpected response code: " + e.code, "Error fetching issue types", Dialog.Message.Error)
+	        }
+	        case e: Exception => {
+	          cbissueType.enabled = true;
+	        	Dialog.showMessage(this, e.getMessage(), "Error fetching issue types", Dialog.Message.Error)
+	        }
+        }
       } else {
         cbissueType.peer.setModel(ComboBox.newConstantModel(List[IssueType](JiraService.dummyIssueType)))
+        cbissueType.enabled = false;
       }
 
     case SelectionChanged(`cbissueType`) =>
@@ -209,6 +253,7 @@ abstract class BaseImporter extends FlowPanel {
       val configFileChooser = getImportFileChooser()
       if (configFileChooser.showOpenDialog(null) == FileChooser.Result.Approve) {
         importFileName.text = configFileChooser.selectedFile.getAbsolutePath
+        btImport.enabled = true
       }
     case ButtonClicked(`importFolderButton`) =>
       val configFileChooser = new FileChooser(new File("."))
@@ -216,7 +261,10 @@ abstract class BaseImporter extends FlowPanel {
       
       if (configFileChooser.showOpenDialog(null) == FileChooser.Result.Approve) {
         importFileName.text = configFileChooser.selectedFile.getAbsolutePath
+        btImport.enabled = true
       }
+    case ButtonClicked(`chkImportAllSheets`) =>
+      tfSheetFilter.enabled = chkImportAllSheets.selected
     case ButtonClicked(`btSave`) =>
       print("")
     case ButtonClicked(`btLoad`) =>
@@ -228,7 +276,7 @@ abstract class BaseImporter extends FlowPanel {
         fieldMapDetails.add(new FieldMapDetail(data(2).asInstanceOf[String], data(1).asInstanceOf[String]))
       }
 
-      val fieldMap = new FieldMap(1l, "First Map", "description", new java.util.Date(), ".csv", tfStartingRowNumber.text.toInt, cbDiscriminator.selection.item.get("name").get, fieldMapDetails, "testcase")
+      val fieldMap = new FieldMap(1l, "First Map", "description", new java.util.Date(), ".csv", tfStartingRowNumber.text.toInt, cbDiscriminator.selection.item._1, fieldMapDetails, "testcase")
       val jobHistories: HashSet[JobHistory] = new java.util.HashSet[JobHistory]() {
         val log = LogFactory.getLog(this.getClass)
         case class Append(msg: String)
@@ -249,7 +297,11 @@ abstract class BaseImporter extends FlowPanel {
         }
       }
 
-      val importJob = new ImportJob(1l, "Temp", importFileName.text, "csv", null, /*status*/ "1", null, fieldMap, jobHistories, "testcase", tfSheetFilter.text)
+      val importJob = new ImportJob(1l, "Temp", 
+          importFileName.text, "csv", null, /*status*/ "1",
+          null, fieldMap, jobHistories, "testcase", 
+          Option(tfSheetFilter.text).filter( _ => chkImportAllSheets.selected) )
+      importJob.setAttachFile(chkAttachFile.selected)
       JiraService.project = new Project(cbProjects.selection.item.id)
       JiraService.issueType = new IssueType(cbissueType.selection.item.id)
       val executor = Executors.newSingleThreadExecutor

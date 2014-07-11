@@ -13,7 +13,8 @@ scalaVersion := "2.10.2"
 resolvers += "Pentaho Repository" at "http://repository.pentaho.org/artifactory/repo/"
 
 libraryDependencies ++= Seq(
-  "net.databinder" %% "dispatch-http" % "0.8.8",
+  "net.databinder" %% "dispatch-http" % "0.8.+",
+  "net.databinder" %% "dispatch-mime" % "0.8.+",
   "net.debasishg" %% "sjson" % "0.19",
   "org.apache.poi" % "poi" % "3.+" withSources(),
   "org.apache.poi" % "poi-scratchpad" % "3.+",

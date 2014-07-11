@@ -9,14 +9,12 @@ import scala.util.parsing.json._
 import scala.annotation.target._
 import sjson.json.Serializer.SJSON
 import sjson.json._
-
 import DefaultProtocol._
 import JsonSerialization._
-import dispatch._
+import dispatch.classic._
 import com.thed.service.impl.zie._
 import com.thed.util._
 import com.thed.model._
-
 import com.thed.zfj.model._
 import com.thed.service.zie.ImportManager
 import java.util.{HashMap, Date, HashSet}
@@ -31,7 +29,8 @@ import com.thed.zfj.model.Project
 import com.thed.zfj.model.IssueType
 import com.thed.zfj.model.Version
 import org.apache.http.conn.{ClientConnectionManagerFactory, ClientConnectionManager}
-
+import java.io.File
+import dispatch.classic.mime.Mime._
 
 // Model
 @BeanInfo class LocalIssue(val id: String, val key: String) { def this() = this("10000", "") }
@@ -147,7 +146,7 @@ object JiraService {
     testcase.getCustomProperties.foreach(f = entry => issue += (entry._1 -> {
         if (entry._2.isInstanceOf[Array[String]]) {
           convertToMap(entry._2.asInstanceOf[Array[String]])
-        }else if (entry._2.isInstanceOf[HashMap[String, String]]){
+        }else if (entry._2.isInstanceOf[HashMap[_,_]]){
           //Convert java map into scala map
           Map("value" -> entry._2.asInstanceOf[HashMap[String, String]].get("value"))
         }else (entry._2)
@@ -159,6 +158,18 @@ object JiraService {
       updateComments(issueId, testcase.getComments)
     issueId
 	}
+  
+  def saveAttachment(issueId:String, file:File) {
+    
+		val issueOutput = http(getHttpRequest("/api/latest/issue/" + issueId + "/attachments").as_!(userName, passwd)  
+		    <:< Map("X-Atlassian-Token" -> "nocheck")
+		    <<* ("file", file) 
+		    >~ { _.getLines.mkString } )
+		    
+		
+    log.debug(issueOutput)
+		
+  }
 
   private def convertToMap(values:Array[String]):Array[Map[String, String]] = {
     var valuesMap = Array[Map[String, String]]()

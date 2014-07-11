@@ -1,6 +1,7 @@
 package com.thed.util;
 
 import com.thed.model.*;
+
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 
@@ -15,14 +16,11 @@ public class Constants{
 	public static final String IMPORT_JOB_IMPORT_SUCCESS = "11007";
 	public static final String IMPORT_JOB_IMPORT_PARTIAL_SUCCESS = "11008";
 
-	public static final String BY_EMPTY_ROW = "byemptyrow";
-	public static final String BY_ID_CHANGE = "byidchange";
-	public static final String BY_TESTCASE_NAME_CHANGE = "bytestcasenamechange";
-
 	public static final HashMap<String, FieldConfig> fieldConfigs = new LinkedHashMap<String, FieldConfig>();
 	public static final HashMap<String, FieldConfig> excelFieldConfigs = new LinkedHashMap<String, FieldConfig>();
 	public static final HashMap<String, FieldConfig> xmlFieldConfigs = new LinkedHashMap<String, FieldConfig>();
     public static final HashMap<String, FieldTypeMetadata> fieldTypeMetadataMap = new LinkedHashMap<String, FieldTypeMetadata>();
+		
 	static{
         excelFieldConfigs.put(ZephyrFieldEnum.NAME, new FieldConfig(ZephyrFieldEnum.NAME, "testcase", true, "string", "name", "name", "Name *", "This is Name", true, true, true, true, 255, null));
         excelFieldConfigs.put(ZephyrFieldEnum.STEPS, new FieldConfig(ZephyrFieldEnum.STEPS, "testcase", true, "string", "step", "step", "Step *", "This is Step", true, true, true, true, 255, null));

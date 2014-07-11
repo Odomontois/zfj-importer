@@ -4,6 +4,8 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.thed.util.Discriminator;
+
 /**
  * Entry of all the available maps
  * Will also have predefined maps for users to start, Users can add more maps
@@ -12,6 +14,7 @@ import java.util.Set;
  * @author smangal
  *
  */
+@SuppressWarnings("serial")
 public class FieldMap implements java.io.Serializable{
     private long id;
 	
@@ -25,7 +28,7 @@ public class FieldMap implements java.io.Serializable{
     
     private Integer startingRowNumber;
     
-    private String discriminator;
+    private Discriminator discriminator;
     
     private Set<FieldMapDetail> fieldMapDetails = new HashSet<FieldMapDetail>();
     
@@ -33,7 +36,7 @@ public class FieldMap implements java.io.Serializable{
 
 		public FieldMap(long id, String name, String description,
 			Date creationDate, String fileEntensions,
-			Integer startingRowNumber, String discriminator,
+			Integer startingRowNumber, Discriminator discriminator,
 			Set<FieldMapDetail> fieldMapDetails, String fieldMapEntityType) {
 		super();
 		this.id = id;
@@ -131,11 +134,11 @@ public class FieldMap implements java.io.Serializable{
 		this.name = name;
 	}
 	
-	public String getDiscriminator() {
+	public Discriminator getDiscriminator() {
 		return discriminator;
 	}
 
-	public void setDiscriminator(String discriminator) {
+	public void setDiscriminator(Discriminator discriminator) {
 		this.discriminator = discriminator;
 	}
 

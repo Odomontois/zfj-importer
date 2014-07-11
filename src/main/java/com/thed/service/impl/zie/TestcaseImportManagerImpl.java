@@ -1,6 +1,8 @@
 package com.thed.service.impl.zie;
 
+import static com.thed.util.Discriminator.*;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -14,14 +16,17 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs.FileContent;
+import org.apache.commons.vfs.FileName;
 import org.apache.commons.vfs.FileObject;
 import org.apache.poi.hssf.record.RecordFormatException;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import com.thed.model.FieldMap;
 import com.thed.model.FieldMapDetail;
@@ -32,8 +37,10 @@ import com.thed.model.TestStepDetailBase;
 import com.thed.model.Testcase;
 import com.thed.model.ZephyrFieldEnum;
 import com.thed.util.Constants;
-import com.thed.zfj.model.*;
-import com.thed.zfj.rest.*;
+import com.thed.util.CopySheets;
+import com.thed.util.SheetIterator;
+import com.thed.zfj.model.TestStep;
+import com.thed.zfj.rest.JiraService;
 
 public class TestcaseImportManagerImpl extends AbstractImportManager {
 
@@ -56,6 +63,7 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 			// fis = new FileInputStream(file);
 			// fs = new POIFSFileSystem(fis);
 
+			
 			Workbook wb = WorkbookFactory.create(fis);
 			// for(int sheetNo=0;sheetNo<wb.getNumberOfSheets();sheetNo++){
 			Sheet sheet = wb.getSheetAt(0);
@@ -593,7 +601,7 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 
 	}
 
-	protected boolean validateFileByEmptyRow(FileObject file, ImportJob importJob)
+	protected boolean validateFileByEmptyRow(FileObject file, ImportJob importJob, boolean stopAfterFirst)
 			throws IOException {
 		FileContent fc = file.getContent();
 		InputStream fis = fc.getInputStream();
@@ -613,108 +621,110 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 			// fis = new FileInputStream(file);
 			// fs = new POIFSFileSystem(fis);
 			Workbook wb = WorkbookFactory.create(fis);
-			//for(int sheetNo=0;sheetNo<wb.getNumberOfSheets();sheetNo++) {
-			Sheet sheet = wb.getSheetAt(0);
-			FormulaEvaluator evaluator = wb.getCreationHelper()
-					.createFormulaEvaluator();// As a best practice, evaluator should be
-																		// one per sheet
-
-			sheet.setDisplayGridlines(false);
-
-			int lastRow = sheet.getLastRowNum() + EXTRA_ROWS_IN_END;
-			/*
-			 * if(!isSheetEmpty(lastRow)){ continue; }
-			 */
-			// Start processing the sheet
-			Set<FieldMapDetail> fieldMapDetails = map.getFieldMapDetails();
-
-			int[] nameColumn = null, stepsColumn = null, resultsColumn = null;
-			for (Object obj : fieldMapDetails.toArray()) {
-				FieldMapDetail fieldMapDetail = (FieldMapDetail) obj;
-				if (ZephyrFieldEnum.NAME.equalsIgnoreCase(fieldMapDetail
-						.getZephyrField())) {
-					nameColumn = converField(fieldMapDetail.getMappedField());
-				} else if (ZephyrFieldEnum.STEPS.equalsIgnoreCase(fieldMapDetail
-						.getZephyrField())) {
-					stepsColumn = converField(fieldMapDetail.getMappedField());
-				} else if (ZephyrFieldEnum.RESULT.equalsIgnoreCase(fieldMapDetail
-						.getZephyrField())) {
-					resultsColumn = converField(fieldMapDetail.getMappedField());
+			for(Sheet sheet : SheetIterator.create(wb, importJob) ) {
+				FormulaEvaluator evaluator = wb.getCreationHelper()
+						.createFormulaEvaluator();// As a best practice, evaluator should be
+																			// one per sheet
+	
+				sheet.setDisplayGridlines(false);
+	
+				int lastRow = sheet.getLastRowNum() + EXTRA_ROWS_IN_END;
+				/*
+				 * if(!isSheetEmpty(lastRow)){ continue; }
+				 */
+				// Start processing the sheet
+				Set<FieldMapDetail> fieldMapDetails = map.getFieldMapDetails();
+	
+				int[] nameColumn = null, stepsColumn = null, resultsColumn = null;
+				for (Object obj : fieldMapDetails.toArray()) {
+					FieldMapDetail fieldMapDetail = (FieldMapDetail) obj;
+					if (ZephyrFieldEnum.NAME.equalsIgnoreCase(fieldMapDetail
+							.getZephyrField())) {
+						nameColumn = converField(fieldMapDetail.getMappedField());
+					} else if (ZephyrFieldEnum.STEPS.equalsIgnoreCase(fieldMapDetail
+							.getZephyrField())) {
+						stepsColumn = converField(fieldMapDetail.getMappedField());
+					} else if (ZephyrFieldEnum.RESULT.equalsIgnoreCase(fieldMapDetail
+							.getZephyrField())) {
+						resultsColumn = converField(fieldMapDetail.getMappedField());
+					}
 				}
-			}
-
-			boolean isNameExist = false, isStepsExist = false, isExpectedresultsExist = false, isSkip = false, blockFlag = false;
-			int startPoint = map.getStartingRowNumber() - 1;
-
-			for (int i = startPoint; i < lastRow; i++) {
-				Row row = sheet.getRow(i);
-				if (isRowNull(row)) {
-					if (!blockFlag) {
-						if (!(isNameExist && isStepsExist && isExpectedresultsExist)) {
-							// invalidList.add(startPoint); //here startPoint is invalid
-							// testcase row no.
-							if (!isNameExist) {
+	
+				boolean isNameExist = false, isStepsExist = false, isExpectedresultsExist = false, isSkip = false, blockFlag = false;
+				int startPoint = map.getStartingRowNumber() - 1;
+	
+				for (int i = startPoint; i < lastRow; i++) {
+					Row row = sheet.getRow(i);
+					if (isRowNull(row)) {
+						if (!blockFlag) {
+							if (!(isNameExist && isStepsExist && isExpectedresultsExist)) {
+								// invalidList.add(startPoint); //here startPoint is invalid
+								// testcase row no.
+								if (!isNameExist) {
+									addJobHistory(importJob, file.getName()
+											+ ", testcase name not exists at " + (startPoint + 1)
+											+ " row");
+								}
+							}
+							if(stopAfterFirst) {
+								break;
+							}
+						}
+						isNameExist = false;
+						isStepsExist = false;
+						isExpectedresultsExist = false;
+						isSkip = false;
+						startPoint = i + 1;
+						blockFlag = true;
+					} else if (isSkip) {
+						continue;
+					} else {
+						blockFlag = false;
+						/*
+						 * if (row.getLastCellNum() > maximumCount) { maximumCount =
+						 * row.getLastCellNum(); }
+						 */
+						String nameValue = null;
+						String stepValue = null;
+						String resultValue = null;
+						Cell nameCell = getCell(nameColumn, sheet, row);
+						Cell stepsCell = getCell(stepsColumn, sheet, row);
+						Cell resultsCell = getCell(resultsColumn, sheet, row);
+	
+						if (nameCell != null) {
+							nameValue = getCellValue(nameCell, evaluator);
+						}
+						if (stepsCell != null) {
+							stepValue = getCellValue(stepsCell, evaluator);
+						}
+						if (resultsCell != null) {
+							resultValue = getCellValue(resultsCell, evaluator);
+						}
+						if (nameValue != null && !"".equalsIgnoreCase(nameValue)) {
+							isNameExist = true;
+						}
+						if (stepValue != null && !"".equalsIgnoreCase(stepValue)
+								&& resultValue != null && !"".equalsIgnoreCase(resultValue)) {
+							isStepsExist = true;
+							isExpectedresultsExist = true;
+						}
+						if (stepValue != null && !"".equalsIgnoreCase(stepValue)) {
+							isStepsExist = true;
+							isExpectedresultsExist = true;
+						} else {
+							if (resultValue != null && !"".equalsIgnoreCase(resultValue)) {
+								isStepsExist = false;
+								isExpectedresultsExist = false;
 								addJobHistory(importJob, file.getName()
-										+ ", testcase name not exists at " + (startPoint + 1)
+										+ ", Result exists without Step at " + (startPoint + 1)
 										+ " row");
+								isSkip = true;
 							}
 						}
 					}
-					isNameExist = false;
-					isStepsExist = false;
-					isExpectedresultsExist = false;
-					isSkip = false;
-					startPoint = i + 1;
-					blockFlag = true;
-				} else if (isSkip) {
-					continue;
-				} else {
-					blockFlag = false;
-					/*
-					 * if (row.getLastCellNum() > maximumCount) { maximumCount =
-					 * row.getLastCellNum(); }
-					 */
-					String nameValue = null;
-					String stepValue = null;
-					String resultValue = null;
-					Cell nameCell = getCell(nameColumn, sheet, row);
-					Cell stepsCell = getCell(stepsColumn, sheet, row);
-					Cell resultsCell = getCell(resultsColumn, sheet, row);
-
-					if (nameCell != null) {
-						nameValue = getCellValue(nameCell, evaluator);
-					}
-					if (stepsCell != null) {
-						stepValue = getCellValue(stepsCell, evaluator);
-					}
-					if (resultsCell != null) {
-						resultValue = getCellValue(resultsCell, evaluator);
-					}
-					if (nameValue != null && !"".equalsIgnoreCase(nameValue)) {
-						isNameExist = true;
-					}
-					if (stepValue != null && !"".equalsIgnoreCase(stepValue)
-							&& resultValue != null && !"".equalsIgnoreCase(resultValue)) {
-						isStepsExist = true;
-						isExpectedresultsExist = true;
-					}
-					if (stepValue != null && !"".equalsIgnoreCase(stepValue)) {
-						isStepsExist = true;
-						isExpectedresultsExist = true;
-					} else {
-						if (resultValue != null && !"".equalsIgnoreCase(resultValue)) {
-							isStepsExist = false;
-							isExpectedresultsExist = false;
-							addJobHistory(importJob, file.getName()
-									+ ", Result exists without Step at " + (startPoint + 1)
-									+ " row");
-							isSkip = true;
-						}
-					}
-				}
-			}// for end
-			// end of processing
-			// }
+				}// for end
+				// end of processing
+			}
 
 			/*
 			 * if (editedFile) { cleanFile(file, map.getStartingRowNumber(),
@@ -811,8 +821,9 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 
 	}
 
+	@Override
 	protected boolean importFileByEmptyRow(FileObject file, ImportJob importJob,
-			Long userId) {
+			Long userId, boolean stopAfterFirst) {
 		InputStream fis = null;
 
 		try {
@@ -832,11 +843,7 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 
 			// fs = new POIFSFileSystem(fis);
 			Workbook wb = WorkbookFactory.create(fis);
-			for(int sheetNo=0;sheetNo<wb.getNumberOfSheets();sheetNo++){
-				Sheet sheet = wb.getSheetAt(sheetNo);
-				if (skipSheet(sheet, importJob)) {
-					continue;
-				}
+			for(Sheet sheet : SheetIterator.create(wb, importJob) ){
 				
 				FormulaEvaluator evaluator = wb.getCreationHelper()
 						.createFormulaEvaluator();// As a best practice, evaluator should be
@@ -856,9 +863,24 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 					row = (Row) sheet.getRow(i);
 					if (isRowNull(row)) {
 						if (!blockFlag) {
-							saveTestCase(importJob, testsValue, userId, columns, i - 1);
+							String issueId = saveTestCase(importJob, testsValue, userId, columns, i - 1);
+							if (importJob.isAttachFile()) {
+								Workbook newWb = createWorkBook(wb);
+								Sheet newSheet = newWb.createSheet(sheet.getSheetName());
+								CopySheets.copySheets(newSheet, sheet);
+								File savedWorkbook = saveWorkbook(sheet, file, newWb);
+								try {
+									JiraService.saveAttachment(issueId, savedWorkbook);
+								} finally {
+									savedWorkbook.delete();
+								}
+							}
+							
 							resetValues(columns);
 							testsValue = new ArrayList<TestStepDetailBase>();
+							if (stopAfterFirst) {
+								break;
+							}
 						}
 						blockFlag = true;
 					} else {
@@ -889,15 +911,33 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 		}
 	}
 
-	private boolean skipSheet(Sheet sheet, ImportJob importJob) {
-		return !importJob.getSheetFilter().matcher(sheet.getSheetName()).matches();
+	private File saveWorkbook(Sheet sheet, FileObject file, Workbook newWb) throws IOException {
+		FileName name = file.getName();
+		
+		File tempFile = new File(name.getParent().getPath(), sheet.getSheetName() + "_" + name.getBaseName());
+		FileOutputStream os = new FileOutputStream(tempFile);
+		try {
+			newWb.write(os);
+		} finally {
+			os.close();
+		}
+		return tempFile;
+	}
+
+	private Workbook createWorkBook(Workbook wb) {
+		if (wb instanceof HSSFWorkbook) {
+			return new HSSFWorkbook();
+		} else if (wb instanceof XSSFWorkbook) {
+			return new XSSFWorkbook();
+		}
+		throw new IllegalArgumentException("Unknown workbook type");
 	}
 
 	public boolean cleanUp(ImportJob importJob) throws Exception {
 		return true;
 	}
 
-	private void saveTestCase(ImportJob importJob,
+	private String saveTestCase(ImportJob importJob,
 			ArrayList<TestStepDetailBase> testsValue, Long userId,
 			Map<String, ColumnValueHolder> columns, int lastRowIdForThisTC)
 			throws Exception {
@@ -961,6 +1001,7 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 		/* Capturing the error so that we can continue with other testcases */
 		try {
 			String issueId = JiraService.saveTestcase(testcase);
+			
 			importJob.getHistory().add(
 					new JobHistory(new Date(), "Issue " + issueId + " created!"));
 			setTestCaseContents(issueId, testsValue, userId);
@@ -968,11 +1009,13 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 					.add(
 							new JobHistory(new Date(), "Issue steps for " + issueId
 									+ " created!"));
+			return issueId;
 		} catch (Exception ex) {
 			addJobHistory(importJob, "Unable to add testcase ending at rowNumber - "
 					+ lastRowIdForThisTC + ". Error:" + ex.getMessage());
 			log.error("", ex);
 		}
+		return null;
 	}
 
 	protected void setTestCaseContents(String issueId,
@@ -1013,22 +1056,22 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 				externalIdColumn = converField(fieldMapDetail.getMappedField());
 			}
 		}// for end
-		if (map.getDiscriminator().equalsIgnoreCase(Constants.BY_ID_CHANGE)) {
+		if (map.getDiscriminator() == BY_ID_CHANGE) {
 			if (nameColumn != null && stepsColumn != null && resultsColumn != null
 					&& externalIdColumn != null) {
 				isValidFieldMap = true;
 			}
 		}
-		if (map.getDiscriminator().equalsIgnoreCase(Constants.BY_EMPTY_ROW)
-				|| map.getDiscriminator().equalsIgnoreCase(
-						Constants.BY_TESTCASE_NAME_CHANGE)) {
+		if (map.getDiscriminator() == BY_EMPTY_ROW
+				|| map.getDiscriminator() == BY_SHEET
+				|| map.getDiscriminator() == BY_TESTCASE_NAME_CHANGE) {
 			if (nameColumn != null && stepsColumn != null && resultsColumn != null) {
 				isValidFieldMap = true;
 			}
 		}
 		if (!isValidFieldMap) { // for jobHistory purpose
 			missedFiledMaps = new StringBuffer();
-			if (map.getDiscriminator().equalsIgnoreCase(Constants.BY_ID_CHANGE)) {
+			if (map.getDiscriminator() == BY_ID_CHANGE) {
 				if (nameColumn == null) {
 					missedFiledMaps.append(" Name,");
 				}
@@ -1042,9 +1085,9 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 					missedFiledMaps.append(" External Id,");
 				}
 			}
-			if (map.getDiscriminator().equalsIgnoreCase(Constants.BY_EMPTY_ROW)
-					|| map.getDiscriminator().equalsIgnoreCase(
-							Constants.BY_TESTCASE_NAME_CHANGE)) {
+			if (map.getDiscriminator()  == BY_EMPTY_ROW
+					|| map.getDiscriminator() == BY_SHEET
+					|| map.getDiscriminator() == BY_TESTCASE_NAME_CHANGE) {
 				missedFiledMaps = new StringBuffer();
 				if (nameColumn == null) {
 					missedFiledMaps.append(" Name,");
