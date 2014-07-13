@@ -1,6 +1,9 @@
 package com.thed.service.impl.zie;
 
-import static com.thed.util.Discriminator.*;
+import static com.thed.util.Discriminator.BY_EMPTY_ROW;
+import static com.thed.util.Discriminator.BY_ID_CHANGE;
+import static com.thed.util.Discriminator.BY_SHEET;
+import static com.thed.util.Discriminator.BY_TESTCASE_NAME_CHANGE;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -17,8 +20,6 @@ import java.util.Map;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.commons.vfs.FileFilter;
-import org.apache.commons.vfs.FileFilterSelector;
 import org.apache.commons.vfs.FileObject;
 import org.apache.commons.vfs.FileSelectInfo;
 import org.apache.commons.vfs.FileSelector;
@@ -44,7 +45,7 @@ import com.thed.util.Constants;
 import com.thed.util.Discriminator;
 import com.thed.util.ObjectUtil;
 
-public abstract class AbstractImportManager implements ImportManager {
+public abstract class AbstractImportManager extends ImportManagerSupport implements ImportManager {
 	private final static Log log = LogFactory.getLog(AbstractImportManager.class);
 	// To fetch testcase priority, requirementPriority preferences
 	protected static final int EXTRA_ROWS_IN_END = 2;
@@ -469,34 +470,7 @@ public abstract class AbstractImportManager implements ImportManager {
 
 	private FileObject[] getAllExcelFile(FileObject fileObj)
 			throws FileSystemException {
-		FileObject[] xlx = findAllFiles(fileObj, "xls");
-		FileObject[] xlsx = findAllFiles(fileObj, "xlsx");
-		return CopyAllFile(xlx, xlsx);
-	}
-
-	private FileObject[] findAllFiles(FileObject file, final String ext)
-			throws FileSystemException {
-		FileFilter ff = new FileFilter() {
-
-			public boolean accept(FileSelectInfo arg0) {
-				FileObject fo = arg0.getFile();
-				return fo.getName().getBaseName().endsWith(ext);
-			}
-		};
-		return file.findFiles(new FileFilterSelector(ff));
-
-	}
-
-	private FileObject[] CopyAllFile(FileObject[] xlx, FileObject[] xlsx) {
-		FileObject[] files = new FileObject[(xlx.length + xlsx.length)];
-		int t = 0;
-		for (int i = 0; i < xlx.length; i++) {
-			files[t++] = xlx[i];
-		}
-		for (int i = 0; i < xlsx.length; i++) {
-			files[t++] = xlsx[i];
-		}
-		return files;
+		return findAllFiles(fileObj, "xls", "xlsx");
 	}
 
 	@SuppressWarnings("serial")

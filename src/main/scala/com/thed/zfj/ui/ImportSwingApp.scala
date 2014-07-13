@@ -22,66 +22,26 @@ import java.io.File
 import javax.swing.JFileChooser
 import dispatch.classic.StatusCode
 import com.thed.util.Discriminator
+import com.thed.service.impl.zie.TestcaseWordImportManager
+import com.thed.service.impl.zie.WordImportJob
+import scala.collection.mutable.Buffer
 
 object ImportSwingApp extends SimpleSwingApplication {
 
   def top = new MainFrame() {
     title = "Zephyr Testcase Importer: Pick Import Type"
-    val btExcel = new Button { text = "EXCEL" }
-    val btXML = new Button { text = "XML" }
-    var mainImportPanel: BaseImporter = null;
     preferredSize = new Dimension(800, 800);
-    val bp = new BoxPanel(Orientation.Vertical) {
-      contents += btExcel
-      contents += btXML
+    val tabs = new TabbedPane {
+      pages += new TabbedPane.Page("Excel", ExcelImporter)
+      pages += new TabbedPane.Page("XML", XMLImporter)
+      pages += new TabbedPane.Page("Word", WordImporter)
     }
-    contents = bp
+    contents = tabs
     centerOnScreen()
-    listenTo(btExcel, btXML)
-    reactions += {
-      case ButtonClicked(`btExcel`) =>
-        bp.contents -= btExcel
-        bp.contents -= btXML
-        mainImportPanel = ExcelImporter
-        listenTo(mainImportPanel.btBack)
-        bp.contents += mainImportPanel
-        deafTo(btExcel, btXML)
-        top.pack
-        mainImportPanel.revalidate()
-        mainImportPanel.repaint()
-
-      case ButtonClicked(`btXML`) =>
-        bp.contents -= btExcel
-        bp.contents -= btXML
-        mainImportPanel = XMLImporter
-        listenTo(mainImportPanel.btBack)
-        bp.contents += mainImportPanel
-        deafTo(btExcel, btXML)
-        top.pack
-        mainImportPanel.revalidate()
-        mainImportPanel.repaint()
-      case ButtonClicked(XMLImporter.btBack) =>
-        goBack()
-      case ButtonClicked(ExcelImporter.btBack) =>
-        goBack()
-    }
-
-    def goBack(): Unit = {
-      deafTo(mainImportPanel.btBack)
-      bp.contents -= mainImportPanel
-      mainImportPanel = null
-      bp.contents += btExcel
-      bp.contents += btXML
-      listenTo(btExcel, btXML)
-      bp.revalidate()
-      bp.repaint()
-      top.pack
-      top.repaint()
-    }
   }
 }
 
-object ExcelImporter extends BaseImporter {
+object ExcelImporter extends BaseMappingImporter {
   override def getImportManager(): ImportManager = new TestcaseImportManagerImpl();
   override def getImportFileChooser(): FileChooser = {
     new FileChooser(new java.io.File(".")) {
@@ -99,7 +59,7 @@ object ExcelImporter extends BaseImporter {
   }
 }
 
-object XMLImporter extends BaseImporter {
+object XMLImporter extends BaseMappingImporter {
   excelFldPanel.visible = false
   override def getImportManager(): ImportManager = new TestLinkImporterManagerImpl();
   override def getImportFileChooser(): FileChooser = {
@@ -116,10 +76,68 @@ object XMLImporter extends BaseImporter {
     Constants.fieldConfigs.putAll(Constants.xmlFieldConfigs)
   }
 }
+object WordImporter extends BaseImporter {
+  
+  override def getImportFileChooser(): FileChooser = {
+    new FileChooser(new java.io.File(".")) {
+      fileFilter = new javax.swing.filechooser.FileNameExtensionFilter("Word .doc and .docx files", "doc", "docx")
+    }
+  }
+  
+  val components = new TextField { columns = 15 }
+  customComponents.contents += new FlowPanel(FlowPanel.Alignment.Left)(
+      new Label("Components: (comma separated list)"), components)
+      
+  val labels = new TextField { columns = 15 }
+  customComponents.contents += new FlowPanel(FlowPanel.Alignment.Left)(
+      new Label("Labels: (comma separated list)"), labels)
+      
+  reactions += {
+    case ButtonClicked(`btImport`) =>
+      status.text = ""
+      
+      val jobHistories: HashSet[JobHistory] = new java.util.HashSet[JobHistory]() {
+        val log = LogFactory.getLog(this.getClass)
+        case class Append(msg: String)
+        object Appender extends Actor {
+          def act() {
+            loop {
+              react {
+                case Append(msg) => log.debug(msg); status.text += msg; status.revalidate(); status.repaint()
+              }
+            }
+          }
+        }
+        Appender.start()
+        override def add(jb: JobHistory) = {
+          val msg = jb.getActionDate + " " + jb.getComments + " \n"
+          Appender ! Append(msg)
+          super.add(jb);
+        }
+      }
+      val importManager = new TestcaseWordImportManager();
+      val importJob = new WordImportJob()
+      importJob.setFolder(importFileName.text)
+      importJob.setComponents(components.text)
+      importJob.setHistory(jobHistories)
+      importJob.setLabels(labels.text)
+      JiraService.project = new Project(cbProjects.selection.item.id)
+      JiraService.issueType = new IssueType(cbissueType.selection.item.id)
+      val executor = Executors.newSingleThreadExecutor
+      val result = executor.submit(new Callable {
+        val log = LogFactory.getLog(this.getClass)
+        def call = {
+          
+          importManager.importAllFiles(importJob)
+          importJob.getHistory().toString();
+        }
+      })
+      result.get()
+  }
+}
 
 abstract class BaseImporter extends FlowPanel {
   val btImport = new Button { text = "Start Import"; horizontalAlignment = Alignment.Center; enabled = false }
-  val btBack = new Button { text = "<- Go Back"; horizontalAlignment = Alignment.Left }
   val btConnect = new Button { text = "Connect" }
   val status = new TextArea("", 3, 50)
   val tfUrl = new TextField("http://localhost:8080/rest", 20)
@@ -129,7 +147,7 @@ abstract class BaseImporter extends FlowPanel {
   val btLoad = new Button("Load")
   val tfUserName = new TextField("admin", 5);
   val tfPassword = new PasswordField("admin", 5);
-  val chkAttachFile = new CheckBox()
+  
   val cbProjects = new ComboBox(List[Project](JiraService.dummyProject)) {
     renderer = Renderer(_.name)
     enabled = false
@@ -138,38 +156,16 @@ abstract class BaseImporter extends FlowPanel {
     renderer = Renderer(_.name)
     enabled = false
   }
-  var cbDiscriminator = new ComboBox(List[Pair[Discriminator, String]](
-      Pair(Discriminator.BY_SHEET, "By Sheet"),
-      Pair(Discriminator.BY_EMPTY_ROW, "By Empty Row"),
-    Pair(Discriminator.BY_ID_CHANGE, "By ID Change"),
-    Pair(Discriminator.BY_TESTCASE_NAME_CHANGE, "By Testcase name Change"))) {
-    renderer = Renderer(_._2)
-  }
-  val excelFldPanel = new FlowPanel(FlowPanel.Alignment.Left)() {
-    contents += new Label("Discriminator:")
-    contents += cbDiscriminator
-    contents += new Label("Starting Row #:")
-    contents += tfStartingRowNumber
-  }
-  val chkImportAllSheets = new CheckBox()
-  tfSheetFilter.enabled = false
-  val excelFldPanel2 = new FlowPanel(FlowPanel.Alignment.Left)() {
-    contents += new Label("Import all sheets:")
-    contents += chkImportAllSheets
-    contents += new Label("Sheet Filter:")
-    contents += tfSheetFilter
-  }
   
-      
-  val spreadSheet = new Spreadsheet(15, 2, getTableColumns)
   val importFileName = new TextField { columns = 25 }
   val importFileButton = new Button { text = "Pick Import File" }
   val importFolderButton = new Button { text = "Pick Import Folder" }
+  val customComponents = new BoxPanel(Orientation.Vertical)
   contents += new BoxPanel(Orientation.Vertical) {
     contents += new FlowPanel {
       contents += new Label("Url: ")
       contents += tfUrl
-      contents += new Label("username: ")
+      contents += new Label("username: ") 
       contents += tfUserName
       contents += new Label("password: ")
       contents += tfPassword
@@ -178,20 +174,16 @@ abstract class BaseImporter extends FlowPanel {
     /*Project/IssueType selection panel*/
     contents += new FlowPanel(FlowPanel.Alignment.Left)(
       new Label("Project: "), cbProjects, new Label("Issue Type: "), cbissueType)
-    contents += excelFldPanel
-    contents += excelFldPanel2
+      
+    contents += customComponents
     
-   
-    contents += new FlowPanel(FlowPanel.Alignment.Left)(
-      new Label("Attach worksheet to issue"), chkAttachFile )
     contents += new FlowPanel(FlowPanel.Alignment.Left)(
       importFileName, importFileButton, importFolderButton /*, btSave, btLoad*/ )
-    contents += spreadSheet
-    contents += new FlowPanel(FlowPanel.Alignment.Center)(btBack, btImport)
+    contents += new FlowPanel(FlowPanel.Alignment.Center)(btImport)
     contents += new ScrollPane(status)
   }
   listenTo(btImport, btConnect, tfUserName, tfPassword, importFileButton,	importFolderButton, cbProjects.selection, cbissueType.selection, btSave, btLoad)
-  listenTo(chkImportAllSheets)
+  
   reactions += {
     case ButtonClicked(`btConnect`) =>
       JiraService.url_base = tfUrl.text
@@ -239,15 +231,7 @@ abstract class BaseImporter extends FlowPanel {
         cbissueType.enabled = false;
       }
 
-    case SelectionChanged(`cbissueType`) =>
-      println("IssueType changed " + cbissueType.selection.item.name + cbProjects.selection.item.issuetypes)
-      if (cbissueType.selection.item.id != "-1") {
-        addBaseFields; addCustomFields
-        println("Fields populated " + Constants.fieldConfigs)
-        spreadSheet.tableModel.addAll(Constants.fieldConfigs)
-        println("New Fields should show up in Table ")
-        spreadSheet.table.revalidate()
-      }
+    
 
     case ButtonClicked(`importFileButton`) =>
       val configFileChooser = getImportFileChooser()
@@ -263,58 +247,15 @@ abstract class BaseImporter extends FlowPanel {
         importFileName.text = configFileChooser.selectedFile.getAbsolutePath
         btImport.enabled = true
       }
-    case ButtonClicked(`chkImportAllSheets`) =>
-      tfSheetFilter.enabled = chkImportAllSheets.selected
+    
     case ButtonClicked(`btSave`) =>
       print("")
     case ButtonClicked(`btLoad`) =>
       print("")
-    case ButtonClicked(`btImport`) =>
-      status.text = ""
-      var fieldMapDetails = new java.util.HashSet[FieldMapDetail]();
-      for (data <- spreadSheet.tableModel.rowData) {
-        fieldMapDetails.add(new FieldMapDetail(data(2).asInstanceOf[String], data(1).asInstanceOf[String]))
-      }
-
-      val fieldMap = new FieldMap(1l, "First Map", "description", new java.util.Date(), ".csv", tfStartingRowNumber.text.toInt, cbDiscriminator.selection.item._1, fieldMapDetails, "testcase")
-      val jobHistories: HashSet[JobHistory] = new java.util.HashSet[JobHistory]() {
-        val log = LogFactory.getLog(this.getClass)
-        case class Append(msg: String)
-        object Appender extends Actor {
-          def act() {
-            loop {
-              react {
-                case Append(msg) => log.debug(msg); status.text += msg; status.revalidate(); status.repaint()
-              }
-            }
-          }
-        }
-        Appender.start()
-        override def add(jb: JobHistory) = {
-          val msg = jb.getActionDate + " " + jb.getComments + " \n"
-          Appender ! Append(msg)
-          super.add(jb);
-        }
-      }
-
-      val importJob = new ImportJob(1l, "Temp", 
-          importFileName.text, "csv", null, /*status*/ "1",
-          null, fieldMap, jobHistories, "testcase", 
-          Option(tfSheetFilter.text).filter( _ => chkImportAllSheets.selected) )
-      importJob.setAttachFile(chkAttachFile.selected)
-      JiraService.project = new Project(cbProjects.selection.item.id)
-      JiraService.issueType = new IssueType(cbissueType.selection.item.id)
-      val executor = Executors.newSingleThreadExecutor
-      val result = executor.submit(new Callable {
-        val log = LogFactory.getLog(this.getClass)
-        def call = {
-          JiraService.startImport(importJob, getImportManager())
-        }
-      })
-      result.get()
+    
   }
 
-  def getTableColumns: List[String]
+  
 
   /**
    * Adds customes field configurations to Constants, from where, they are accessed to populate UI as well to create customField data construct consumed to create Rest Request
@@ -361,12 +302,110 @@ abstract class BaseImporter extends FlowPanel {
     Constants.fieldTypeMetadataMap.put(fieldMetadataId, fieldMetadata)
     fieldMetadataId
   }
-
   def addBaseFields(): Unit = {
     Constants.fieldConfigs.clear()
   }
-  def getImportManager(): ImportManager
   def getImportFileChooser(): FileChooser
+}
+
+abstract class BaseMappingImporter extends BaseImporter {
+  
+  val spreadSheet = new Spreadsheet(15, 2, getTableColumns)
+  val chkAttachFile = new CheckBox()
+  val cbDiscriminator = new ComboBox(List[Pair[Discriminator, String]](
+      Pair(Discriminator.BY_SHEET, "By Sheet"),
+      Pair(Discriminator.BY_EMPTY_ROW, "By Empty Row"),
+    Pair(Discriminator.BY_ID_CHANGE, "By ID Change"),
+    Pair(Discriminator.BY_TESTCASE_NAME_CHANGE, "By Testcase name Change"))) {
+    renderer = Renderer(_._2)
+  }
+  val chkImportAllSheets = new CheckBox()
+  tfSheetFilter.enabled = false
+  val excelFldPanel = new BoxPanel(Orientation.Vertical) {
+    
+  	val row1 = new FlowPanel(FlowPanel.Alignment.Left)() {
+	    contents += new Label("Discriminator:")
+	    contents += cbDiscriminator
+	    contents += new Label("Starting Row #:")
+	    contents += tfStartingRowNumber
+	  }
+  
+  
+  	val excelFldPanel2 = new FlowPanel(FlowPanel.Alignment.Left)() {
+	    contents += new Label("Import all sheets:")
+	    contents += chkImportAllSheets
+	    contents += new Label("Sheet Filter:")
+	    contents += tfSheetFilter
+  	}
+  	contents += row1
+  	contents += excelFldPanel2
+  }
+  
+  customComponents.contents += excelFldPanel  
+  customComponents.contents += new FlowPanel(FlowPanel.Alignment.Left)(
+      new Label("Attach worksheet to issue"), chkAttachFile )
+  customComponents.contents += spreadSheet
+  
+  listenTo(spreadSheet, chkImportAllSheets)
+  reactions += {
+    case ButtonClicked(`chkImportAllSheets`) =>
+      tfSheetFilter.enabled = chkImportAllSheets.selected
+    case SelectionChanged(`cbissueType`) =>
+      println("IssueType changed " + cbissueType.selection.item.name + cbProjects.selection.item.issuetypes)
+      if (cbissueType.selection.item.id != "-1") {
+        addBaseFields; addCustomFields
+        println("Fields populated " + Constants.fieldConfigs)
+        spreadSheet.tableModel.addAll(Constants.fieldConfigs)
+        println("New Fields should show up in Table ")
+        spreadSheet.table.revalidate()
+      }
+    case ButtonClicked(`btImport`) =>
+      status.text = ""
+      var fieldMapDetails = new java.util.HashSet[FieldMapDetail]();
+      for (data <- spreadSheet.tableModel.rowData) {
+        fieldMapDetails.add(new FieldMapDetail(data(2).asInstanceOf[String], data(1).asInstanceOf[String]))
+      }
+
+      val fieldMap = new FieldMap(1l, "First Map", "description", new java.util.Date(), ".csv", tfStartingRowNumber.text.toInt, cbDiscriminator.selection.item._1, fieldMapDetails, "testcase")
+      val jobHistories: HashSet[JobHistory] = new java.util.LinkedHashSet[JobHistory]() {
+        val log = LogFactory.getLog(this.getClass)
+        case class Append(msg: String)
+        object Appender extends Actor {
+          def act() {
+            loop {
+              react {
+                case Append(msg) => log.debug(msg); status.text += msg; status.revalidate(); status.repaint()
+              }
+            }
+          }
+        }
+        Appender.start()
+        override def add(jb: JobHistory) = {
+          val msg = jb.getActionDate + " " + jb.getComments + " \n"
+          Appender ! Append(msg)
+          super.add(jb);
+        }
+      }
+
+      val importJob = new ImportJob(1l, "Temp", 
+          importFileName.text, "csv", null, /*status*/ "1",
+          null, fieldMap, jobHistories, "testcase", 
+          Option(tfSheetFilter.text).filter( _ => chkImportAllSheets.selected) )
+      importJob.setAttachFile(chkAttachFile.selected)
+      JiraService.project = new Project(cbProjects.selection.item.id)
+      JiraService.issueType = new IssueType(cbissueType.selection.item.id)
+      val executor = Executors.newSingleThreadExecutor
+      val result = executor.submit(new Callable {
+        val log = LogFactory.getLog(this.getClass)
+        def call = {
+          JiraService.startImport(importJob, getImportManager())
+        }
+      })
+      result.get()
+  }
+  def getTableColumns: List[String]
+  def getImportManager(): ImportManager
+  
 }
 
 class Spreadsheet(val height: Int, val width: Int, tableColumns: List[String]) extends ScrollPane {

@@ -3,7 +3,6 @@ package com.thed.model;
 // Generated Jun 29, 2007 8:10:35 PM by Hibernate Tools 3.2.0.b9
 
 import java.util.Date;
-import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -11,7 +10,7 @@ import scala.Option;
 import scala.runtime.AbstractFunction1;
 
 @SuppressWarnings("serial")
-public class ImportJob implements java.io.Serializable {
+public class ImportJob implements java.io.Serializable, HasJobHistory {
 
 	private Long id;
 
@@ -75,7 +74,7 @@ public class ImportJob implements java.io.Serializable {
 		this.status = status;
 		this.treeId = treeId;
 		this.fieldMap = fieldMap;
-		this.history = new LinkedHashSet<JobHistory>(history);
+		this.history = history;
 		this.importEntityType = importEntityType;
 		this.sheetFilter = sheetFilter
 				.map(new AbstractFunction1<String, Pattern>() {
