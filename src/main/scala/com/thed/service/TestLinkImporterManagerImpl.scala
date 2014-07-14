@@ -45,9 +45,8 @@ class TestLinkImporterManagerImpl extends AbstractImportManager{
   def importSingleFiles(file: File, importJob: ImportJob, action: String, userId: Long) = {
     val testLinkFile = new File(importJob.getFolder);
     if (!testLinkFile.exists()) {
-      addJobHistory(importJob, "File: " + importJob.getName + " not found.");
+      addJobHistory(importJob, "File: " + importJob.getFolder + " not found.");
     }
-    importJob.setStatus(Constants.IMPORT_JOB_IMPORT_IN_PROGRESS);
     process(importJob, userId);
   }
 
@@ -79,7 +78,7 @@ class TestLinkImporterManagerImpl extends AbstractImportManager{
       }
 
       case EvElemStart(_, "externalid", _, _) => {
-        findFldConfigAndPopulateCustomField(job.getFieldMap, "testcase.externalId", ObjectUtil.htmlToText(getText(xmlr, "externalId")));
+        findFldConfigAndPopulateCustomField(job, job.getFieldMap, "testcase.externalId", ObjectUtil.htmlToText(getText(xmlr, "externalId")));
       }
 
       case EvElemStart(_, "importance", _, _) => {
@@ -87,15 +86,15 @@ class TestLinkImporterManagerImpl extends AbstractImportManager{
       }
 
       case EvElemStart(_, "preconditions", _, _) => {
-        findFldConfigAndPopulateCustomField(job.getFieldMap, "testcase.preconditions", ObjectUtil.htmlToText(getText(xmlr, "preconditions")));
+        findFldConfigAndPopulateCustomField(job, job.getFieldMap, "testcase.preconditions", ObjectUtil.htmlToText(getText(xmlr, "preconditions")));
       }
 
       case EvElemStart(_, "execution_type", _, _) => {
-        findFldConfigAndPopulateCustomField(job.getFieldMap, "testcase.execution_type", ObjectUtil.htmlToText(getText(xmlr, "execution_type")));
+        findFldConfigAndPopulateCustomField(job, job.getFieldMap, "testcase.execution_type", ObjectUtil.htmlToText(getText(xmlr, "execution_type")));
       }
 
       case EvElemStart(_, "custom_field", _, _) =>
-        setCustomFieldValue(xmlr, job.getFieldMap)
+        setCustomFieldValue(job, xmlr, job.getFieldMap)
 
       case EvElemStart(_, "keywords", _, _) => {
         keywords = List[String]()
@@ -182,7 +181,7 @@ class TestLinkImporterManagerImpl extends AbstractImportManager{
     return fullText.toString()
   }
 
-  def setCustomFieldValue(xmlr: XMLEventReader, map:FieldMap){
+  def setCustomFieldValue(job:ImportJob, xmlr: XMLEventReader, map:FieldMap){
     var name:String = null
     var value:String = null
     var done = false
@@ -201,14 +200,18 @@ class TestLinkImporterManagerImpl extends AbstractImportManager{
     if (currentTestCase.getCustomProperties.containsKey(name)){
       log.warn(">>>>> this will override previous value, pl make sure to append it. ")
     }
-    findFldConfigAndPopulateCustomField(map, name, value);
+    findFldConfigAndPopulateCustomField(job, map, name, value);
   }
 
-  private def findFldConfigAndPopulateCustomField(map:FieldMap, fldName:String, fldValue:String){
+  private def findFldConfigAndPopulateCustomField(job:ImportJob, map:FieldMap, fldName:String, fldValue:String){
     var customFieldName:String = null
     var fldConfig:FieldConfig = null
     //todo - performance warning, do it once
-    map.getFieldMapDetails.foreach(fmapDetail => if (fmapDetail.getMappedField == fldName) {customFieldName =  fmapDetail.getZephyrField; fldConfig = Constants.fieldConfigs.get(fmapDetail.getZephyrField)})
+    map.getFieldMapDetails.foreach(fmapDetail => 
+      if (fmapDetail.getMappedField == fldName) {
+        customFieldName =  fmapDetail.getZephyrField; 
+        fldConfig = job.getFieldConfigs().get(fmapDetail.getZephyrField)
+        })
     if (customFieldName == null){
       log.error("No mapping found for customField " + fldName + ", skipping custom field")
       return

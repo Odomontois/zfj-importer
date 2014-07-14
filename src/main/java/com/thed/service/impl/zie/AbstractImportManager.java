@@ -13,7 +13,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -37,7 +36,6 @@ import org.apache.poi.ss.util.CellReference;
 import com.thed.model.FieldConfig;
 import com.thed.model.FieldTypeMetadata;
 import com.thed.model.ImportJob;
-import com.thed.model.JobHistory;
 import com.thed.model.Preference;
 import com.thed.model.Testcase;
 import com.thed.service.zie.ImportManager;
@@ -109,21 +107,16 @@ public abstract class AbstractImportManager extends ImportManagerSupport impleme
 
 			if (files != null && files.length > 1) {
 				if (lastResult == true && allImportFails == true) {
-					importJob.setStatus(Constants.IMPORT_JOB_IMPORT_SUCCESS);
-					importJob.setTreeId(null);
 					isSuccess = true;
 				} else if (lastResult == false && allImportFails == true) {
-					importJob.setStatus(Constants.IMPORT_JOB_IMPORT_PARTIAL_SUCCESS);
 					isSuccess = true;
 				}
 				if (!allImportFails) {
-					importJob.setStatus(Constants.IMPORT_JOB_IMPORT_FAILED);
 					isSuccess = false;
 				}
 			} else {
 				if (currentResult) {
 					isSuccess = true;
-					importJob.setTreeId(null);
 				}
 			}
 
@@ -170,7 +163,6 @@ public abstract class AbstractImportManager extends ImportManagerSupport impleme
 
 		if (isValidFile) {
 
-			importJob.setStatus(Constants.IMPORT_JOB_NORMALIZATION_SUCCESS);
 			addJobHistory(importJob, file.getName() + " normalization success..!");
 
 			if (discriminator == BY_EMPTY_ROW) {
@@ -188,7 +180,6 @@ public abstract class AbstractImportManager extends ImportManagerSupport impleme
 			return isValidFile;
 		}
 		if (isFileProcessed) {
-			importJob.setStatus(Constants.IMPORT_JOB_IMPORT_SUCCESS);
 			String successFileLocation = file.getParent().toString() + File.separator
 					+ "success";
 			FileObject newObj = fsManager.resolveFile(successFileLocation);
@@ -201,7 +192,6 @@ public abstract class AbstractImportManager extends ImportManagerSupport impleme
 			addJobHistory(importJob, file.getName().getBaseName()
 					+ " imported successfully..!");
 		} else {
-			importJob.setStatus(Constants.IMPORT_JOB_IMPORT_FAILED);
 			addJobHistory(importJob, file.getName().getBaseName()
 					+ " imported failed..!");
 		}
@@ -446,18 +436,6 @@ public abstract class AbstractImportManager extends ImportManagerSupport impleme
 		return isNull;
 	}
 
-	protected void addJobHistory(ImportJob importJob, String comment) {
-		if (importJob.getHistory() == null) {
-			importJob.setHistory(new HashSet<JobHistory>(1));
-		}
-		JobHistory jobHistory;
-		jobHistory = new JobHistory();
-		jobHistory.setActionDate(new Date());
-		jobHistory.setComments(comment);
-		importJob.getHistory().add(jobHistory);
-		System.out.println(comment);
-	}
-
 	public boolean isFieldMapInputvalid(ImportJob importJob) {
 		return false;
 	}
@@ -465,7 +443,6 @@ public abstract class AbstractImportManager extends ImportManagerSupport impleme
 	protected void addJobHistoryAndUpdateStatus(ImportJob importJob,
 			String status, String msg) {
 		addJobHistory(importJob, msg);
-		importJob.setStatus(status);
 	}
 
 	private FileObject[] getAllExcelFile(FileObject fileObj)

@@ -18,7 +18,6 @@ import org.apache.poi.xwpf.usermodel.XWPFDocument;
 
 import com.thed.model.JobHistory;
 import com.thed.model.Testcase;
-import com.thed.util.Constants;
 import com.thed.zfj.rest.JiraService;
 
 public class TestcaseWordImportManager extends ImportManagerSupport {
@@ -79,14 +78,11 @@ public class TestcaseWordImportManager extends ImportManagerSupport {
 
 			if (files != null && files.length > 1) {
 				if (lastResult == true && allImportFails == true) {
-					importJob.setStatus(Constants.IMPORT_JOB_IMPORT_SUCCESS);
 					isSuccess = true;
 				} else if (lastResult == false && allImportFails == true) {
-					importJob.setStatus(Constants.IMPORT_JOB_IMPORT_PARTIAL_SUCCESS);
 					isSuccess = true;
 				}
 				if (!allImportFails) {
-					importJob.setStatus(Constants.IMPORT_JOB_IMPORT_FAILED);
 					isSuccess = false;
 				}
 			} else {

@@ -1,6 +1,10 @@
 package com.thed.service.impl.zie;
 
-import static com.thed.util.Discriminator.*;
+import static com.thed.util.Discriminator.BY_EMPTY_ROW;
+import static com.thed.util.Discriminator.BY_ID_CHANGE;
+import static com.thed.util.Discriminator.BY_SHEET;
+import static com.thed.util.Discriminator.BY_TESTCASE_NAME_CHANGE;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -8,7 +12,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -28,6 +31,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+import com.thed.model.FieldConfig;
 import com.thed.model.FieldMap;
 import com.thed.model.FieldMapDetail;
 import com.thed.model.FieldTypeMetadata;
@@ -52,11 +56,10 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 		FileContent fc = file.getContent();
 		InputStream fis = fc.getInputStream();
 		if (importJob.getHistory() == null) {
-			importJob.setHistory(new HashSet<JobHistory>(0));
+			throw new IllegalStateException("Histories must not be null");
 		}
 		int oldJobHistorySize = importJob.getHistory().size();
 		try {
-			importJob.setStatus(Constants.IMPORT_JOB_NORMALIZATION_IN_PROGRESS);
 
 			FieldMap map = importJob.getFieldMap();
 
@@ -180,7 +183,6 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 			 * maximumCount - 1); maximumCount = maximumCount - 1; }
 			 */
 			if (importJob.getHistory().size() > oldJobHistorySize) {
-				importJob.setStatus(Constants.IMPORT_JOB_NORMALIZATION_FAILED);
 
 				addJobHistory(importJob, file.getName() + " normalization failed..!");
 				return false;
@@ -228,11 +230,10 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 		InputStream fis = fc.getInputStream();
 
 		if (importJob.getHistory() == null) {
-			importJob.setHistory(new HashSet<JobHistory>(0));
+			throw new IllegalStateException("Histories must not be null");
 		}
 		int oldJobHistorySize = importJob.getHistory().size();
 		try {
-			importJob.setStatus(Constants.IMPORT_JOB_NORMALIZATION_IN_PROGRESS);
 
 			FieldMap map = importJob.getFieldMap();
 			// fis = new FileInputStream(file);
@@ -360,7 +361,6 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 			}// end of processing
 			// }
 			if (importJob.getHistory().size() > oldJobHistorySize) {
-				importJob.setStatus(Constants.IMPORT_JOB_NORMALIZATION_FAILED);
 				addJobHistory(importJob, file.getName() + " normalization failed..!");
 				return false;
 			} else {
@@ -499,7 +499,7 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 			 */
 			Map<String, ColumnValueHolder> columns = new HashMap<String, ColumnValueHolder>();
 			Map<String, FieldTypeMetadata> metadata = Constants.fieldTypeMetadataMap;
-			initializeColumns(fieldMapDetails, columns, metadata);
+			initializeColumns(importJob.getFieldConfigs(), fieldMapDetails, columns, metadata);
 
 			// fis = new FileInputStream(file);
 			// fs = new POIFSFileSystem(fis);
@@ -609,12 +609,11 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 
 		Set<JobHistory> jobHistoryList = importJob.getHistory();
 		if (jobHistoryList == null) {
-			jobHistoryList = new HashSet<JobHistory>(0);
+			throw new IllegalStateException("Histories must not be null");
 		}
 		int oldJobHistorySize = jobHistoryList.size();
 
 		try {
-			importJob.setStatus(Constants.IMPORT_JOB_NORMALIZATION_IN_PROGRESS);
 
 			FieldMap map = importJob.getFieldMap();
 
@@ -732,9 +731,6 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 			 */
 			if (jobHistoryList.size() > oldJobHistorySize) {
 
-				importJob.setHistory(jobHistoryList);
-				importJob.setStatus(Constants.IMPORT_JOB_NORMALIZATION_FAILED);
-
 				addJobHistory(importJob, file.getName() + " normalization failed..!");
 
 				return false;
@@ -772,7 +768,6 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 	}
 
 	private void initializeImport(ImportJob importJob) {
-		importJob.setStatus(Constants.IMPORT_JOB_IMPORT_IN_PROGRESS);
 	}
 
 	/**
@@ -782,17 +777,18 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 	 * @param columns
 	 * @param metadata
 	 */
-	private void initializeColumns(Set<FieldMapDetail> fieldMapDetails,
+	private void initializeColumns(Map<String, FieldConfig> fieldConfigs, 
+			Set<FieldMapDetail> fieldMapDetails,
 			Map<String, ColumnValueHolder> columns,
 			Map<String, FieldTypeMetadata> metadata) {
 		/* process importable fields */
-		for (Object obj : fieldMapDetails.toArray()) {
-			FieldMapDetail fieldMapDetail = (FieldMapDetail) obj;
+		for (FieldMapDetail fieldMapDetail : fieldMapDetails) {
 			ColumnValueHolder holder = new ColumnValueHolder();
 			int[] cellRef = converField(fieldMapDetail.getMappedField());
+			
 			holder.setCellRef(cellRef);
-			holder.setFieldConfig(Constants.fieldConfigs.get(fieldMapDetail
-					.getZephyrField()));
+			
+			holder.setFieldConfig(fieldConfigs.get(fieldMapDetail.getZephyrField()));
 			columns.put(holder.getFieldConfig().getId().toString(), holder);
 
 			/* some fields require truncation info */
@@ -839,7 +835,7 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 			 */
 			Map<String, ColumnValueHolder> columns = new HashMap<String, ColumnValueHolder>();
 			Map<String, FieldTypeMetadata> metadata = Constants.fieldTypeMetadataMap;
-			initializeColumns(fieldMapDetails, columns, metadata);
+			initializeColumns(importJob.getFieldConfigs(), fieldMapDetails, columns, metadata);
 
 			// fs = new POIFSFileSystem(fis);
 			Workbook wb = WorkbookFactory.create(fis);

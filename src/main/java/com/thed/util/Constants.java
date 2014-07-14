@@ -16,7 +16,6 @@ public class Constants{
 	public static final String IMPORT_JOB_IMPORT_SUCCESS = "11007";
 	public static final String IMPORT_JOB_IMPORT_PARTIAL_SUCCESS = "11008";
 
-	public static final HashMap<String, FieldConfig> fieldConfigs = new LinkedHashMap<String, FieldConfig>();
 	public static final HashMap<String, FieldConfig> excelFieldConfigs = new LinkedHashMap<String, FieldConfig>();
 	public static final HashMap<String, FieldConfig> xmlFieldConfigs = new LinkedHashMap<String, FieldConfig>();
     public static final HashMap<String, FieldTypeMetadata> fieldTypeMetadataMap = new LinkedHashMap<String, FieldTypeMetadata>();

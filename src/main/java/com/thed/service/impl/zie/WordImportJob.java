@@ -9,51 +9,36 @@ import com.thed.model.JobHistory;
 public class WordImportJob implements HasJobHistory {
 
 	private Set<JobHistory> history = new LinkedHashSet<JobHistory>();
+	
 	private String folder;
-	private String status;
 	private String components;
 	private String labels;
 	
-	@Override
-	public Set<JobHistory> getHistory() {
-		return history;
+	
+	public WordImportJob(Set<JobHistory> history, String folder,
+			String components, String labels) {
+		super();
+		this.history = history;
+		this.folder = folder;
+		this.components = components;
+		this.labels = labels;
 	}
 
 	@Override
-	public void setHistory(Set<JobHistory> hashSet) {
-		history = hashSet;
+	public Set<JobHistory> getHistory() {
+		return history;
 	}
 
 	public String getFolder() {
 		return folder;
 	}
 
-	public void setFolder(String folder) {
-		this.folder = folder;
-	}
-
-	public String getStatus() {
-		return status;
-	}
-
-	public void setStatus(String status) {
-		this.status = status;
-	}
-
 	public String getComponents() {
 		return components;
 	}
 
-	public void setComponents(String components) {
-		this.components = components;
-	}
-
 	public String getLabels() {
 		return labels;
-	}
-
-	public void setLabels(String labels) {
-		this.labels = labels;
 	}
 
 	

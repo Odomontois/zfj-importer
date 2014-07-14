@@ -1,7 +1,6 @@
 package com.thed.service.impl.zie;
 
 import java.util.Date;
-import java.util.LinkedHashSet;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.vfs.FileFilter;
@@ -31,7 +30,7 @@ public abstract class ImportManagerSupport {
 
 	protected void addJobHistory(HasJobHistory importJob, String comment) {
 		if (importJob.getHistory() == null) {
-			importJob.setHistory(new LinkedHashSet<JobHistory>(1));
+			throw new IllegalStateException("Histories must not be null");
 		}
 		JobHistory jobHistory;
 		jobHistory = new JobHistory();
