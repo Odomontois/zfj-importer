@@ -109,8 +109,12 @@ public class TestcaseWordImportManager extends ImportManagerSupport {
 		String title = getTitle(file);
 		Testcase testcase = new Testcase();
 		testcase.setName(title);
-		testcase.components = importJob.getComponents();
-		testcase.setTag(importJob.getLabels());
+		if (StringUtils.isNotBlank(importJob.getComponents())) {
+			testcase.components = importJob.getComponents();
+		}
+		if (StringUtils.isNotBlank(importJob.getLabels())) {
+			testcase.setTag(importJob.getLabels());
+		}
 		String issueId = JiraService.saveTestcase(testcase);
 		JiraService.saveAttachment(issueId, new File(file.getName().getPath()));
 		importJob.getHistory().add(
