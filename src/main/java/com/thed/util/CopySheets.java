@@ -68,7 +68,7 @@ public class CopySheets {
 			}
 		}
 		for (int i = 0; i <= maxColumnNum; i++) {
-			newSheet.setColumnWidth(i, sheet.getColumnWidth(i));
+			newSheet.setColumnWidth(i, Math.min(sheet.getColumnWidth(i), 256*255));
 		}
 	}
 
