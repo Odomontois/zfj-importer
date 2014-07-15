@@ -1,7 +1,9 @@
 package com.thed.model;
 
+import org.apache.commons.lang.StringUtils;
 
-public class FieldMapDetail implements java.io.Serializable{
+
+public class FieldMapDetail {
 	
 	private String zephyrField;
 	
@@ -38,7 +40,11 @@ public class FieldMapDetail implements java.io.Serializable{
 	 * @param mappedField the mappedField to set
 	 */
 	public void setMappedField(String mappedField) {
-		this.mappedField = mappedField;
+		if (StringUtils.isNotBlank(mappedField)) {
+			this.mappedField = mappedField;
+		} else {
+			this.mappedField = null;
+		}
 	}
 
 	/**

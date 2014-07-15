@@ -31,12 +31,12 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellValue;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.util.CellReference;
 
 import com.thed.model.FieldConfig;
 import com.thed.model.FieldTypeMetadata;
 import com.thed.model.ImportJob;
-import com.thed.model.Preference;
 import com.thed.model.Testcase;
 import com.thed.service.zie.ImportManager;
 import com.thed.util.Constants;
@@ -201,37 +201,31 @@ public abstract class AbstractImportManager extends ImportManagerSupport impleme
 
 	protected boolean importFileForByName(FileObject file, ImportJob importJob,
 			Long userId) throws IOException {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
 	protected boolean importFileById(FileObject file, ImportJob importJob,
 			Long userId) throws IOException {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
 	protected boolean importFileByEmptyRow(FileObject file, ImportJob importJob,
 			Long userId, boolean stopAfterFirst) throws IOException {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
 	protected boolean validateFileByNameChange(FileObject file,
 			ImportJob importJob) throws IOException {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
 	protected boolean validateFileByIdChange(FileObject file, ImportJob importJob)
 			throws IOException {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
 	protected boolean validateFileByEmptyRow(FileObject file, ImportJob importJob, boolean stopAfterFirst)
 			throws IOException {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
@@ -340,15 +334,22 @@ public abstract class AbstractImportManager extends ImportManagerSupport impleme
 		return null;
 	}
 
-	protected Preference loadPreference(String name) {
-		return new Preference(name, name, name);
-	}
-
 	protected String generatePreferenceName(FieldConfig fieldConfig) {
 		return fieldConfig.getEntityName().toLowerCase() + "."
 				+ fieldConfig.getColumnName() + ".LOV";
 	}
 
+	private Cell getCell(int[] cellRef, Sheet sheet, Row currentRow) {
+		if (cellRef == null) {
+			return null;
+		}
+		if (cellRef[1] == -1) {
+			return currentRow.getCell(cellRef[0]);
+		} else {
+			return sheet.getRow(cellRef[1]).getCell(cellRef[0]);
+		}
+	}
+	
 	protected String getCellValue(Cell originalCell, FormulaEvaluator evaluator) {
 		if (originalCell != null && evaluator != null
 				&& originalCell.getCellType() != Cell.CELL_TYPE_BLANK) {
@@ -375,6 +376,40 @@ public abstract class AbstractImportManager extends ImportManagerSupport impleme
 		}
 		return null;
 	}
+	
+	protected String getCellValue(String cellMapping, Sheet sheet, Row currentRow, FormulaEvaluator evaluator) {
+		
+		String staticText = convertToStatic(cellMapping);
+		if (staticText != null) {
+			return staticText;// allow the cell mapping to contain a static value between inverted commas
+		}
+		int[] cellRef = convertField(cellMapping);
+		
+		if (cellRef != null ) {
+			Cell originalCell = getCell(cellRef, sheet, currentRow);
+			return getCellValue(originalCell, evaluator);
+			
+		} else {
+			return null; 
+		}
+	}
+	
+	protected boolean isValidMapping(String cellMapping) {
+		
+		return isStaticMapping(cellMapping) || convertField(cellMapping) != null;
+	}
+
+	private String convertToStatic(String cellMapping) {
+		if (isStaticMapping(cellMapping)) {
+			return StringUtils.substringBetween(cellMapping, "\"");
+		}
+		return null;
+	}
+
+	private boolean isStaticMapping(String cellMapping) {
+		return StringUtils.startsWith(cellMapping, "\"") 
+				&& StringUtils.endsWith(cellMapping, "\"");
+	}
 
 	protected void copyFile(FileObject srcFile, String dest) throws IOException {
 
@@ -394,16 +429,19 @@ public abstract class AbstractImportManager extends ImportManagerSupport impleme
 		newObj.copyFrom(srcFile, fs);
 	}
 
-	protected int[] converField(String filedNumber) {
+	protected int[] convertField(String fieldRef) {
 
 		try {
-			if (StringUtils.isEmpty(filedNumber)) {
+			if (StringUtils.isEmpty(fieldRef)) {
 				return null;
 			}
-			CellReference cellReference = new CellReference(filedNumber);
+			// Handle reference to cell by returning [colIndex, rowIndex]
+			CellReference cellReference = new CellReference(fieldRef);
 			return new int[] { cellReference.getCol(), cellReference.getRow() };
 		} catch (Exception iae) {
-			int colIndex = CellReference.convertColStringToIndex(filedNumber);
+			
+			// Handle reference to column only by returning [colIndex, -1]
+			int colIndex = CellReference.convertColStringToIndex(fieldRef);
 			if (colIndex < 0) {
 				return null; // return null so validation works
 			}
@@ -519,9 +557,6 @@ public abstract class AbstractImportManager extends ImportManagerSupport impleme
 	 */
 	public static class ColumnValueHolder {
 
-		/* excel sheet column index */
-		private int[] cellRef;
-
 		/* column value */
 		private String value;
 
@@ -536,9 +571,7 @@ public abstract class AbstractImportManager extends ImportManagerSupport impleme
 		/* if it is a list type custom field, holds preference values */
 		private Map<String, String> preferenceMap;
 
-		public int getColumnIndex() {
-			return cellRef == null ? -1 : cellRef[0];
-		}
+		private String mappedField;
 
 		public String getValue() {
 			return value;
@@ -580,16 +613,13 @@ public abstract class AbstractImportManager extends ImportManagerSupport impleme
 			this.preferenceMap = preferenceMap;
 		}
 
-		public void setCellRef(int[] cellRef) {
-			this.cellRef = cellRef;
-			if (cellRef != null && cellRef.length != 2) {
-				throw new IllegalArgumentException("Cell ref should be [column,row]");
-			}
-
+		public void setMappedField(String mappedField) {
+			this.mappedField = mappedField;
+			
 		}
 
-		public int[] getCellRef() {
-			return cellRef;
+		public String getMappedField() {
+			return mappedField;
 		}
 
 	}
