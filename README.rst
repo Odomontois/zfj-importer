@@ -1,5 +1,5 @@
 ========================================================================
-Zephyr for JIRA Tests (Server and Data Center versions) Importer Utility
+Zephyr for JIRA (Server and Data Center versions) Tests Importer Utility
 ========================================================================
 
 
