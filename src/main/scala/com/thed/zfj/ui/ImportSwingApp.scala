@@ -1,40 +1,41 @@
 package com.thed.zfj.ui
 
-import javax.swing.table._
-import scala.swing._
-import scala.swing.ListView._
-import scala.swing.event._
-import scala.collection.JavaConversions._
-import com.thed.zfj.rest._
-import com.thed.zfj.model._
-import com.thed.model._
-import com.thed.util._
 import java.awt.Dimension
-import com.thed.service.zie.ImportManager
-import com.thed.service.impl.zie.TestcaseImportManagerImpl
-import com.thed.service.TestLinkImporterManagerImpl
-import actors.Actor
-import org.apache.commons.logging.{ LogFactory, Log }
-import actors.threadpool.{ Callable, Executors }
-import java.util.{ AbstractMap, HashSet, HashMap }
-import scala.Array
 import java.io.File
-import javax.swing.JFileChooser
-import dispatch.classic.StatusCode
-import com.thed.util.Discriminator
-import com.thed.service.impl.zie.TestcaseWordImportManager
-import com.thed.service.impl.zie.WordImportJob
-import scala.collection.mutable.Buffer
+import java.util.{HashMap, LinkedHashMap, LinkedHashSet}
+import javax.swing.table._
 import javax.swing.text.DefaultCaret
-import java.util.LinkedHashSet
-import java.util.LinkedHashMap
+
+import com.thed.model._
+import com.thed.service.TestLinkImporterManagerImpl
+import com.thed.service.impl.zie.{TestcaseImportManagerImpl, TestcaseWordImportManager, WordImportJob}
+import com.thed.service.zie.ImportManager
+import com.thed.util.{Discriminator, _}
+import com.thed.zfj.model._
+import com.thed.zfj.rest._
+import dispatch.classic.StatusCode
+import org.apache.commons.lang3.StringUtils
+import org.apache.commons.logging.LogFactory
+
+import scala.actors.Actor
+import scala.actors.threadpool.{Callable, Executors}
+import scala.collection.JavaConversions._
+import scala.swing.ListView._
+import scala.swing._
+import scala.swing.event._
 
 object ImportSwingApp extends SimpleSwingApplication {
 
-  val tfUrl = new TextField("http://localhost:8080/rest", 20)
+  val tfUrl = new TextField("http://localhost:2990/jira", 20)
   val btConnect = new Button { text = "Connect" }
   val tfUserName = new TextField("admin", 5);
   val tfPassword = new PasswordField("admin", 5);
+
+  val chkbxIsJOD = new CheckBox()
+  val tfZODUrl = new TextField("http://localhost:9000", 15);
+  val tfAccessKey = new TextField("", 10);
+  val tfSecretKey = new TextField("", 10);
+
   val importFileName = new TextField { columns = 25 }
   val importFileButton = new Button { text = "Pick Import File" }
   val importFolderButton = new Button { text = "Pick Import Folder" }
@@ -68,25 +69,38 @@ object ImportSwingApp extends SimpleSwingApplication {
         contents += new FlowPanel {
           contents += new Label("Url: ")
           contents += tfUrl
+          contents += new Label("JOD: ")
+          contents += chkbxIsJOD
           contents += new Label("username: ")
           contents += tfUserName
           contents += new Label("password: ")
           contents += tfPassword
           contents += btConnect
         }
+        /*For JOD*/
+        var zfjCloudFlowPenal = new FlowPanel(FlowPanel.Alignment.Left)(new Label("ZFJ URL: "), tfZODUrl, new Label("Access Key:"), tfAccessKey, new Label("Secret Key:"), tfSecretKey)
+        zfjCloudFlowPenal.visible = false;
+        contents += new FlowPanel(FlowPanel.Alignment.Left)(zfjCloudFlowPenal)
+
         /*Project/IssueType selection panel*/
         contents += new FlowPanel(FlowPanel.Alignment.Left)(
           new Label("Project: "), cbProjects, new Label("Issue Type: "), cbissueType)
 
         contents += new ScrollPane(tabs)
 
-        contents += new FlowPanel(FlowPanel.Alignment.Left)(importFileName, importFileButton, importFolderButton  )
-        contents += new FlowPanel(FlowPanel.Alignment.Center)(btImport)
+        contents += new FlowPanel(FlowPanel.Alignment.Left)(importFileName, importFileButton, importFolderButton, new Label("  |  "), new FlowPanel(FlowPanel.Alignment.Right)(btImport))
 
-        listenTo(btConnect, cbProjects.selection, cbissueType.selection, tabs.selection)
+        listenTo(btConnect, cbProjects.selection, cbissueType.selection, tabs.selection, tfUrl, chkbxIsJOD)
         listenTo(btImport, importFileName, importFileButton, importFolderButton)
 
         reactions += {
+          case ValueChanged(`tfUrl`) => {
+            chkbxIsJOD.selected = StringUtils.containsIgnoreCase(tfUrl.text, "localhost") || StringUtils.containsIgnoreCase(tfUrl.text, "atlassian.net") || StringUtils.containsIgnoreCase(tfUrl.text, "jira.com");
+            zfjCloudFlowPenal.visible = chkbxIsJOD.selected;
+          }
+          case ButtonClicked(`chkbxIsJOD`) => {
+            zfjCloudFlowPenal.visible = chkbxIsJOD.selected;
+          }
           case ButtonClicked(`btConnect`) => {
             JiraService.url_base = tfUrl.text
             JiraService.userName = tfUserName.text
@@ -165,7 +179,7 @@ object ImportSwingApp extends SimpleSwingApplication {
       }
       rightComponent = new ScrollPane(status)
 
-      dividerLocation = preferredSize.height * 13 / 16
+      dividerLocation = preferredSize.height * 14 / 16
     }
 
     centerOnScreen()
@@ -209,9 +223,20 @@ object ImportSwingApp extends SimpleSwingApplication {
     }
   }
   abstract class BaseImporter extends FlowPanel {
-
+    def setServerConfiguration():Unit = {
+      JiraService.serverType = if(chkbxIsJOD.selected) ZfjServerType.Cloud else ZfjServerType.BTF;
+      if(chkbxIsJOD.selected)
+        JiraService.zConfig = new ZConfig.ZConfigBuilder().withJiraUserName(tfUserName.text).withJiraHostKey("N/A").withJIRABaseUrl(tfUrl.text).withJIRASharedSecret("N/A")
+        .withZephyrBaseUrl(tfZODUrl.text).withZephyrAppKey("N/A").withZephyrAccessKey(tfAccessKey.text).withZephyrSecretKey(tfSecretKey.text).build
+      else
+        JiraService.zConfig = null;
+    }
     def getImportFileChooser(): FileChooser
-    def importIssues()
+    def importIssues(): Unit ={
+      setServerConfiguration();
+      importIssuesInternal();
+    }
+    protected def importIssuesInternal()
   }
 
   object ExcelImporter extends BaseMappingImporter {
@@ -266,7 +291,7 @@ object ImportSwingApp extends SimpleSwingApplication {
       contents += new FlowPanel(FlowPanel.Alignment.Left)(
         new Label("Labels: (comma separated list)"), labels)
     }
-    def importIssues() = {
+    def importIssuesInternal() = {
       status.text = ""
 
       val jobHistories = createJobHistories()
@@ -395,7 +420,7 @@ object ImportSwingApp extends SimpleSwingApplication {
       fieldConfigs.clear()
     }
 
-    override def importIssues() = {
+    override def importIssuesInternal() = {
 
       status.text = ""
       var fieldMapDetails = new java.util.HashSet[FieldMapDetail]();
@@ -410,6 +435,12 @@ object ImportSwingApp extends SimpleSwingApplication {
       importJob.setAttachFile(chkAttachFile.selected)
       JiraService.project = new Project(cbProjects.selection.item.id)
       JiraService.issueType = new IssueType(cbissueType.selection.item.id)
+      JiraService.serverType = if(chkbxIsJOD.selected) ZfjServerType.Cloud else ZfjServerType.BTF;
+      if(chkbxIsJOD.selected)
+        JiraService.zConfig = new ZConfig.ZConfigBuilder().withJiraUserName(tfUserName.text).withJiraHostKey("N/A").withJIRABaseUrl(tfUrl.text).withJIRASharedSecret("N/A")
+          .withZephyrBaseUrl(tfZODUrl.text).withZephyrAppKey("N/A").withZephyrAccessKey(tfAccessKey.text).withZephyrSecretKey(tfSecretKey.text).build
+      else
+        JiraService.zConfig = null;
       val executor = Executors.newSingleThreadExecutor
       val result = executor.submit(new Callable {
         val log = LogFactory.getLog(this.getClass)

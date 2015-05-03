@@ -3,38 +3,30 @@ package com.thed.zfj.rest
 // - Dispatch (http://dispatch.databinder.net)
 // - SJSON (https://github.com/debasishg/sjson)
 
-import scala.reflect.BeanInfo
-import scala.collection.JavaConversions._
-import scala.util.parsing.json._
-import scala.annotation.target._
+import java.io.File
+import java.net.{URL, URI}
+import java.util.HashMap
+
+import com.thed.model._
+import com.thed.service.zie.ImportManager
+import com.thed.util._
+import com.thed.zfj.model.{Component, Issue, IssueType, Priority, Project, TestStep, Version}
+import dispatch.classic._
+import dispatch.classic.mime.Mime._
+import org.apache.commons.lang3.StringUtils
+import org.apache.commons.logging.{Log, LogFactory}
 import sjson.json.Serializer.SJSON
 import sjson.json._
-import DefaultProtocol._
-import JsonSerialization._
-import dispatch.classic._
-import com.thed.service.impl.zie._
-import com.thed.util._
-import com.thed.model._
-import com.thed.zfj.model._
-import com.thed.service.zie.ImportManager
-import java.util.{HashMap, Date, HashSet}
-import org.apache.commons.logging.{LogFactory, Log}
-import javax.net.ssl._
-import java.security.cert.X509Certificate
-import com.thed.zfj.model.Priority
-import com.thed.zfj.model.TestStep
-import com.thed.zfj.model.Issue
-import com.thed.zfj.model.Component
-import com.thed.zfj.model.Project
-import com.thed.zfj.model.IssueType
-import com.thed.zfj.model.Version
-import org.apache.http.conn.{ClientConnectionManagerFactory, ClientConnectionManager}
-import java.io.File
-import dispatch.classic.mime.Mime._
+
+import scala.annotation.target._
+import scala.collection.JavaConversions._
+import scala.reflect.BeanInfo
 
 // Model
 @BeanInfo class LocalIssue(val id: String, val key: String) { def this() = this("10000", "") }
 @BeanInfo class JiraMetaResponse(val expand:String, @(JSONTypeHint @field)(value = classOf[Project])val projects:List[Project]){ def this() = this("projects", null) }
+object ZfjServerType extends Enumeration { val BTF, Cloud = Value}
+
 //http://localhost:8080/rest/api/latest/issue/IC-1
 // Http Request
 
@@ -46,6 +38,8 @@ object JiraService {
 	var passwd = "admin"
 	var project:Project = _
 	var issueType:IssueType = _
+	var zConfig:ZConfig = _
+	var serverType:ZfjServerType.Value = _
 	def main(args: Array[String]):Unit = {
 		//val json = http(url(url_base +"/api/latest/issue/SUM-1").as_!(userName, passwd) >~ { _.getLines.mkString } )
 		// Deserialization
@@ -193,23 +187,54 @@ object JiraService {
   }
 
 	def saveTestStep(issueId:String, step:TestStep):String = {
-		//for(val step:TestStep <- steps) {
-			var fields = new String( SJSON.out(step))
-			println(fields + " \n IssueId is:" + issueId)
-			var stepResponse = http(getHttpRequest("/zephyr/latest/teststep/" + issueId).as_!(userName, passwd) <:< Map("User-Agent" -> "ZFJImporter", "AO_7DEABF" -> java.util.UUID.randomUUID.toString, "AO-7DEABF" -> java.util.UUID.randomUUID.toString)  << (fields, "application/json") >~ { _.getLines.mkString } )
-			println(stepResponse)
-			stepResponse
-		//}
+		serverType match{
+			case ZfjServerType.BTF => {
+				return saveTestStepBTF(issueId, step);
+			}
+			case ZfjServerType.Cloud => {
+				return saveTestStepCloud(issueId, step);
+			}
+		}
+	}
+
+	private def saveTestStepBTF(issueId:String, step:TestStep):String = {
+		var fields = new String( SJSON.out(step))
+		println(fields + " \n IssueId is:" + issueId)
+		var stepResponse = http(getHttpRequest("/zephyr/latest/teststep/" + issueId).as_!(userName, passwd) <:< Map("User-Agent" -> "ZFJImporter", "AO_7DEABF" -> java.util.UUID.randomUUID.toString, "AO-7DEABF" -> java.util.UUID.randomUUID.toString)  << (fields, "application/json") >~ { _.getLines.mkString } )
+		println(stepResponse)
+		stepResponse
+	}
+
+	private def saveTestStepCloud(issueId:String, step:TestStep):String = {
+		var fields = new String( SJSON.out(step))
+		println(fields + " \n IssueId is:" + issueId)
+		var jwtToken = ZFJRestClientUtil.getJWTToken(new URI(zConfig.ZEPHYR_BASE_URL + "/rest/teststep/" + issueId + "?projectId=" + project.id), HttpMethod.POST, zConfig)
+		var stepResponse = http(getHttpRequest("/teststep/" + issueId + "?projectId=" + project.id, zConfig.ZEPHYR_BASE_URL) <:< Map(
+			"User-Agent" -> "ZFJImporter",
+			"Authorization" -> jwtToken,
+			"zapiAccessKey" -> zConfig.ACCESS_KEY)  << (fields, "application/json") >~ { _.getLines.mkString } )
+		println(stepResponse)
+		stepResponse
 	}
 
 
-  def getHttpRequest(urlFragment:String):Request = {
-    if(url_base.indexOf("https") > -1){
-      System.setProperty("sun.security.ssl.allowUnsafeRenegotiation", "true")
-      System.setProperty("sun.security.ssl.allowLegacyHelloMessages", "true")
-      return url(url_base + urlFragment).secure
-    }
-    else
-      return url(url_base + urlFragment)
+
+	private def getHttpRequest(urlFragment:String, urlBase:String = url_base):Request = {
+		var origBaseUrl:URL = new URL(urlBase.replaceFirst("/$", ""));
+		/* If url doesnt already have rest endPoint in it, lets append it. Both ZFJ BTF and Cloud need it.*/
+		if(!StringUtils.endsWith(origBaseUrl.getFile(), "/rest")){
+			origBaseUrl = new URL(origBaseUrl.getProtocol(), origBaseUrl.getHost(), origBaseUrl.getPort(), origBaseUrl.getFile() + "/rest");
+		}
+    return getHttpRequest(urlFragment, origBaseUrl)
   }
+
+	private def getHttpRequest(urlFragment: String, origBaseUrl: URL): Request = {
+		if (origBaseUrl.getProtocol().indexOf("https") > -1) {
+			System.setProperty("sun.security.ssl.allowUnsafeRenegotiation", "true")
+			System.setProperty("sun.security.ssl.allowLegacyHelloMessages", "true")
+			return url(origBaseUrl.toString() + urlFragment).secure
+		}
+		else
+			return url(origBaseUrl.toString() + urlFragment)
+	}
 }

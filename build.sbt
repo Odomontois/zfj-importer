@@ -1,26 +1,36 @@
+import sbtassembly.Plugin.AssemblyKeys
 import AssemblyKeys._
 
 assemblySettings
 
-name := "zfj-importer "
+name := "zfj-importer"
 
-version := "0.29"
+version := "0.31"
 
-scalaVersion := "2.10.2"
+scalaVersion := "2.10.4"
 
-//resolvers += "Local Maven Repository" at "file:///Users/smangal/.m2/repository"
+resolvers += "Local Maven Repository" at "file:///Users/smangal/.m2/repository"
+
+resolvers += "Atlassian Public" at "https://maven.atlassian.com/repository/public"
+
+resolvers += "OSS" at "https://oss.sonatype.org/content/repositories/public"
 
 resolvers += "Pentaho Repository" at "http://repository.pentaho.org/artifactory/repo/"
 
 libraryDependencies ++= Seq(
-  "net.databinder" %% "dispatch-http" % "0.8.+",
-  "net.databinder" %% "dispatch-mime" % "0.8.+",
+  "net.databinder" %% "dispatch-http" % "0.8.10",
+  "net.databinder" %% "dispatch-mime" % "0.8.10",
   "net.debasishg" %% "sjson" % "0.19",
-  "org.apache.poi" % "poi" % "3.+" withSources(),
-  "org.apache.poi" % "poi-scratchpad" % "3.+",
-  "org.apache.poi" % "poi-ooxml" % "3.+",
+  "com.atlassian.jwt" % "jwt-plugin" % "1.2.4" withSources (),
+  "com.atlassian.httpclient" % "atlassian-httpclient-api" % "0.21.1" withSources (),
+  "com.atlassian.fugue" % "fugue" % "1.1" withSources (),
+  "org.apache.poi" % "poi" % "3.9" withSources(),
+  "org.apache.poi" % "poi-scratchpad" % "3.9",
+  "org.apache.poi" % "poi-ooxml" % "3.9",
+  "com.google.guava" % "guava" % "14.0.1",
   "commons-vfs" % "commons-vfs" % "2.0-20090205",
-  "commons-lang" % "commons-lang" % "2.6",
+  "commons-configuration" % "commons-configuration" % "1.10",
+  "org.apache.commons" % "commons-lang3" % "3.1",
   "commons-logging" % "commons-logging" % "1.1.1",
   "log4j" % "log4j" % "1.2.17",
   "org.scala-lang" % "scala-swing" % "2.10.2" withSources ()
