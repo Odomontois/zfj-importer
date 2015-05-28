@@ -59,7 +59,8 @@ object ImportSwingApp extends SimpleSwingApplication {
   val tabs = new TabbedPane {
     pages += new TabbedPane.Page("Excel", ExcelImporter)
     pages += new TabbedPane.Page("XML", XMLImporter)
-    pages += new TabbedPane.Page("Word", WordImporter)
+    if(StringUtils.equalsIgnoreCase(System.getProperty("importWord", "false"), "true"))
+      pages += new TabbedPane.Page("Word", WordImporter)
   }
 
   def top = new MainFrame() {
