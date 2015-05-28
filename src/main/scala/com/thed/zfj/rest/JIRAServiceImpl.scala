@@ -137,10 +137,9 @@ object JiraService {
 			issue += ("components" -> comps)
 		}
 
+		/* see https://developer.atlassian.com/jiradev/api-reference/jira-rest-apis/jira-rest-api-tutorials/jira-rest-api-example-create-issue */
     testcase.getCustomProperties.foreach(f = entry => issue += (entry._1 -> {
-        if (entry._2.isInstanceOf[Array[String]]) {
-          convertToMap(entry._2.asInstanceOf[Array[String]])
-        }else if (entry._2.isInstanceOf[HashMap[_,_]]){
+        if (entry._2.isInstanceOf[HashMap[_,_]]){
           //Convert java map into scala map
           Map("value" -> entry._2.asInstanceOf[HashMap[String, String]].get("value"))
         }else (entry._2)

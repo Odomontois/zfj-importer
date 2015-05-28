@@ -1,39 +1,6 @@
 package com.thed.service.impl.zie;
 
-import static com.thed.util.Discriminator.BY_EMPTY_ROW;
-import static com.thed.util.Discriminator.BY_ID_CHANGE;
-import static com.thed.util.Discriminator.BY_SHEET;
-import static com.thed.util.Discriminator.BY_TESTCASE_NAME_CHANGE;
-
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.commons.vfs.FileObject;
-import org.apache.commons.vfs.FileSelectInfo;
-import org.apache.commons.vfs.FileSelector;
-import org.apache.commons.vfs.FileSystemException;
-import org.apache.commons.vfs.FileSystemManager;
-import org.apache.commons.vfs.FileType;
-import org.apache.commons.vfs.VFS;
-import org.apache.poi.hssf.usermodel.HSSFDateUtil;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellValue;
-import org.apache.poi.ss.usermodel.FormulaEvaluator;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.util.CellReference;
-
+import com.google.common.collect.ImmutableMap;
 import com.thed.model.FieldConfig;
 import com.thed.model.FieldTypeMetadata;
 import com.thed.model.ImportJob;
@@ -42,6 +9,24 @@ import com.thed.service.zie.ImportManager;
 import com.thed.util.Constants;
 import com.thed.util.Discriminator;
 import com.thed.util.ObjectUtil;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.time.DateFormatUtils;
+import org.apache.commons.lang3.time.FastDateFormat;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.commons.vfs.*;
+import org.apache.poi.hssf.usermodel.HSSFDateUtil;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.util.CellReference;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+
+import static com.thed.util.Discriminator.*;
 
 public abstract class AbstractImportManager extends ImportManagerSupport implements ImportManager {
 	private final static Log log = LogFactory.getLog(AbstractImportManager.class);
@@ -497,45 +482,87 @@ public abstract class AbstractImportManager extends ImportManagerSupport impleme
 			FieldTypeMetadata fldMetadata = Constants.fieldTypeMetadataMap
 					.get(fldConfig.getFieldTypeMetadata());
 			// Treat arrays and customField with allowedValues the same way.
-			if (StringUtils.equals("array", fldMetadata.getJiraDataType())) {
-				if (StringUtils.equals("string", fldMetadata.getItemsDataType())
-						|| StringUtils.equals("string", fldMetadata.getJiraDataType())) {
-					testcase.getCustomProperties().put(fldConfig.getId(),
-							rawValue.split(","));
-				} else
-					// todo handle user, group, attachment, version, project etc arrays
-					// here
-					log.error("Unknown items data type for Array "
-							+ fldMetadata.getItemsDataType());
-			} else if (StringUtils.equals("string", fldMetadata.getJiraDataType())
-					&& (fldConfig.getAllowedValues() != null && fldConfig
-							.getAllowedValues().size() > 0)) {
-				testcase.getCustomProperties().put(fldConfig.getId(),
-						new HashMap<String, String>() {
-							{
-								put("value", rawValue);
-							}
-						});
-			} else if (StringUtils.equals("number", fldMetadata.getJiraDataType())) {
-				testcase.getCustomProperties().put(fldConfig.getId(),
-						Double.parseDouble(rawValue));
-			} else if (StringUtils.equals("date", fldMetadata.getJiraDataType())) {
-				SimpleDateFormat df = new SimpleDateFormat();
-				try {
-					testcase.getCustomProperties().put(fldConfig.getId(),
-							df.parse(rawValue));
-				} catch (ParseException e) {
-					log.fatal(
-							"Error in parsing date for custom field " + fldConfig.getId()
-									+ ", value " + rawValue, e);
-				}
-			} else if (StringUtils.equals("datetime", fldMetadata.getJiraDataType())) {
-				testcase.getCustomProperties().put(fldConfig.getId(),
-						Double.parseDouble(rawValue));
-			} else {
-				testcase.getCustomProperties().put(fldConfig.getId(), rawValue);
+			switch(fldMetadata.getJiraDataTypeEnum()) {
+				case array:
+					populateArrayTypeCustomField(testcase, fldConfig, rawValue, fldMetadata);
+					break;
+				case group:
+					testcase.getCustomProperties().put(fldConfig.getId(),ImmutableMap.of("name", rawValue));
+					break;
+				case project:
+					testcase.getCustomProperties().put(fldConfig.getId(),ImmutableMap.of("key", rawValue));
+					break;
+				case user:
+					testcase.getCustomProperties().put(fldConfig.getId(),ImmutableMap.of("name", rawValue));
+					break;
+				case version:
+					testcase.getCustomProperties().put(fldConfig.getId(),ImmutableMap.of("name", rawValue));
+					break;
+				case string:
+					if((fldConfig.getAllowedValues() != null && fldConfig.getAllowedValues().size() > 0)){
+						testcase.getCustomProperties().put(fldConfig.getId(),ImmutableMap.of("value", rawValue));
+					}
+					break;
+				case number:
+					testcase.getCustomProperties().put(fldConfig.getId(), Double.parseDouble(rawValue));
+					break;
+				case date:
+					String inputPattern = System.getProperty("DATE_FORMAT");
+					setDateTypeCustomField(testcase, fldConfig, rawValue, inputPattern, DateFormatUtils.ISO_DATE_FORMAT);
+					break;
+				case datetime:
+					inputPattern = System.getProperty("DATE_TIME_FORMAT");
+					setDateTypeCustomField(testcase, fldConfig, rawValue, inputPattern, DateFormatUtils.ISO_DATETIME_TIME_ZONE_FORMAT);
+					break;
+				default:
+					testcase.getCustomProperties().put(fldConfig.getId(), rawValue);
 			}
 		}
+	}
+
+	private void setDateTypeCustomField(Testcase testcase, FieldConfig fldConfig, String rawValue, String inputPattern, FastDateFormat pattern) {
+		SimpleDateFormat df = (inputPattern == null) ? new SimpleDateFormat() : new SimpleDateFormat(inputPattern);
+		try {
+            testcase.getCustomProperties().put(fldConfig.getId(), DateFormatUtils.format(df.parse(rawValue), pattern.getPattern()));
+        } catch (ParseException e) {
+            log.fatal("Error in parsing date for custom field " + fldConfig.getId() + ", value " + rawValue, e);
+            testcase.getCustomProperties().put(fldConfig.getId(), rawValue);
+        }
+	}
+
+	private void populateArrayTypeCustomField(Testcase testcase, FieldConfig fldConfig, String rawValue, FieldTypeMetadata fldMetadata) {
+		if (StringUtils.equals("string", fldMetadata.getItemsDataType())) {
+			/* Labels */
+            if(StringUtils.equals(FieldTypeMetadata.LABEL_TYPE, fldMetadata.getCustomType())){
+                testcase.getCustomProperties().put(fldConfig.getId(), rawValue.split(","));
+            }else {
+				/* Multi select and Multi radio buttons */
+                ArrayList<Map> valueList = getArrayOfMapsWithKey(rawValue, "value");
+                testcase.getCustomProperties().put(fldConfig.getId(), valueList);
+            }
+        } else if(StringUtils.equals("user", fldMetadata.getItemsDataType()) && StringUtils.equals(FieldTypeMetadata.MULTI_USER_PICKER_TYPE, fldMetadata.getCustomType())){
+			ArrayList<Map> valueList = getArrayOfMapsWithKey(rawValue, "name");
+            testcase.getCustomProperties().put(fldConfig.getId(), valueList);
+        }else if(StringUtils.equals("version", fldMetadata.getItemsDataType()) && StringUtils.equals(FieldTypeMetadata.MULTI_VERSION_TYPE, fldMetadata.getCustomType())){
+            ArrayList<Map> valueList = getArrayOfMapsWithKey(rawValue, "name");
+            testcase.getCustomProperties().put(fldConfig.getId(), valueList);
+        } else if(StringUtils.equals("group", fldMetadata.getItemsDataType()) && StringUtils.equals(FieldTypeMetadata.MULTI_GROUP_PICKER_TYPE, fldMetadata.getCustomType())){
+            ArrayList<Map> valueList = getArrayOfMapsWithKey(rawValue, "name");
+            testcase.getCustomProperties().put(fldConfig.getId(), valueList);
+        } else
+            log.error("Unknown items data type for Array " + fldMetadata.getItemsDataType());
+	}
+
+	private ArrayList<Map> getArrayOfMapsWithKey(String rawValue, final String mapKeyName) {
+		return getArrayOfMapsWithKey(rawValue, mapKeyName, ",");
+	}
+
+	private ArrayList<Map> getArrayOfMapsWithKey(String rawValue, final String mapKeyName, final String seperator) {
+		ArrayList<Map> valueList = new ArrayList<Map>();
+		for(String val : rawValue.split(seperator)){
+            valueList.add(ImmutableMap.of(mapKeyName, val));
+        }
+		return valueList;
 	}
 
 	/**

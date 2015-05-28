@@ -16,6 +16,19 @@ public class FieldTypeMetadata {
 	public static final Long TYPE_DATE_ID = 5l;
 	public static final Long TYPE_DECIMAL_ID = 10l;
 
+	public static final String LABEL_TYPE = "com.atlassian.jira.plugin.system.customfieldtypes:labels";
+	public static final String MULTI_CHECK_BOXES_TYPE = "com.atlassian.jira.plugin.system.customfieldtypes:multicheckboxes";
+	public static final String USER_PICKER_TYPE = "com.atlassian.jira.plugin.system.customfieldtypes:userpicker";
+	public static final String MULTI_USER_PICKER_TYPE = "com.atlassian.jira.plugin.system.customfieldtypes:multiuserpicker";
+	public static final String DATE_PICKER_TYPE = "com.atlassian.jira.plugin.system.customfieldtypes:datepicker";
+	public static final String VERSION_TYPE = "com.atlassian.jira.plugin.system.customfieldtypes:version";
+	public static final String MULTI_VERSION_TYPE = "com.atlassian.jira.plugin.system.customfieldtypes:multiversion";
+	public static final String PROJECT_TYPE = "com.atlassian.jira.plugin.system.customfieldtypes:project";
+	public static final String RADIO_BUTTONS_TYPE = "com.atlassian.jira.plugin.system.customfieldtypes:radiobuttons";
+	public static final String GROUP_PICKER_TYPE = "com.atlassian.jira.plugin.system.customfieldtypes:grouppicker";
+    public static final String MULTI_GROUP_PICKER_TYPE = "com.atlassian.jira.plugin.system.customfieldtypes:multigrouppicker";
+	public static final String MULTI_SELECT_TYPE = "com.atlassian.jira.plugin.system.customfieldtypes:multiselect";
+
 	
 	// invisible to user
 //	public static final String TYPE_LONG = "Long";
@@ -39,6 +52,9 @@ public class FieldTypeMetadata {
 	/* For array type fields, this will indicate datatypes of contained items */
 	private String itemsDataType;
 
+	/*Special type e.g. com.atlassian.jira.plugin.system.customfieldtypes:labels, */
+	private String customType;
+
 	/* length of string field. applies only to text and long text fields */
 	private Integer length ;
 
@@ -49,12 +65,13 @@ public class FieldTypeMetadata {
 	private Integer labelWidth;
 
     public FieldTypeMetadata(String id, String displayLabel,
-                             String jiraDataType, String itemsDataType, Integer length,
+                             String jiraDataType, String itemsDataType, String customType, Integer length,
                              Boolean visible, Integer labelWidth) {
 		super();
 		this.id = id;
 		this.displayLabel = displayLabel;
 		this.jiraDataType = jiraDataType;
+		this.customType = customType;
 		this.itemsDataType = itemsDataType;
 		this.length = length;
 		this.visible = visible;
@@ -100,6 +117,10 @@ public class FieldTypeMetadata {
 		return jiraDataType;
 	}
 
+    public JiraDataType getJiraDataTypeEnum() {
+        return JiraDataType.valueOf(jiraDataType);
+    }
+
 
 	public void setJiraDataType(String jiraDataType) {
 		this.jiraDataType = jiraDataType;
@@ -115,6 +136,13 @@ public class FieldTypeMetadata {
 		this.itemsDataType = itemsDataType;
 	}
 
+	public String getCustomType() {
+		return customType;
+	}
+
+	public void setCustomType(String customType) {
+		this.customType = customType;
+	}
 
 	public Integer getLength() {
 		return length;
@@ -135,4 +163,18 @@ public class FieldTypeMetadata {
 		this.labelWidth = labelWidth;
 	}
 
+    public enum JiraDataType{
+        array,
+        date,
+        datetime,
+        group,
+        issuetype,
+        issuelink,
+        number,
+        priority,
+        project,
+        string,
+        user,
+        version
+    }
 }

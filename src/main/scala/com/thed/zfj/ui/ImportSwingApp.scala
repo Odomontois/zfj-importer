@@ -16,6 +16,7 @@ import com.thed.zfj.rest._
 import dispatch.classic.StatusCode
 import org.apache.commons.lang3.StringUtils
 import org.apache.commons.logging.LogFactory
+import org.apache.commons.vfs.{AllFileSelector, FileObject, FileType, VFS}
 
 import scala.actors.Actor
 import scala.actors.threadpool.{Callable, Executors}
@@ -31,15 +32,17 @@ object ImportSwingApp extends SimpleSwingApplication {
   val tfUserName = new TextField("admin", 5);
   val tfPassword = new PasswordField("admin", 5);
 
-  val chkbxIsJOD = new CheckBox()
-  val tfZODUrl = new TextField("http://localhost:9000", 15);
+  val chkbxIsJOD = new CheckBox{text="Cloud"; tooltip="select it if importing to JIRA On Demand?"}
+  val tfZODUrl = new TextField{text = sys.env.get("ZFJURL").getOrElse("https://prod-api.zephyr4jiracloud.com/connect");
+                                columns = 15; editable=false; tooltip="URL to access Zephyr For JIRA Cloud"};
   val tfAccessKey = new TextField("", 10);
   val tfSecretKey = new TextField("", 10);
 
-  val importFileName = new TextField { columns = 25 }
+  val importFileName = new TextField { columns = 22 }
   val importFileButton = new Button { text = "Pick Import File" }
   val importFolderButton = new Button { text = "Pick Import Folder" }
   val btImport = new Button { text = "Start Import"; horizontalAlignment = Alignment.Center; enabled = false }
+  val chkbxFilesCleanup = new CheckBox{selected=true; tooltip="Cleanup previously imported files from success folder, no original files will be touched"}
   val status = new TextArea("") {
     editable = false;
   }
@@ -69,9 +72,9 @@ object ImportSwingApp extends SimpleSwingApplication {
         contents += new FlowPanel {
           contents += new Label("Url: ")
           contents += tfUrl
-          contents += new Label("JOD: ")
+          //contents += new Label("JOD: ")
           contents += chkbxIsJOD
-          contents += new Label("username: ")
+          contents += new Label("| username: ")
           contents += tfUserName
           contents += new Label("password: ")
           contents += tfPassword
@@ -88,7 +91,7 @@ object ImportSwingApp extends SimpleSwingApplication {
 
         contents += new ScrollPane(tabs)
 
-        contents += new FlowPanel(FlowPanel.Alignment.Left)(importFileName, importFileButton, importFolderButton, new Label("  |  "), new FlowPanel(FlowPanel.Alignment.Right)(btImport))
+        contents += new FlowPanel(FlowPanel.Alignment.Left)(importFileName, importFileButton, importFolderButton, new Label("  |  "), new FlowPanel(FlowPanel.Alignment.Center)(chkbxFilesCleanup, btImport))
 
         listenTo(btConnect, cbProjects.selection, cbissueType.selection, tabs.selection, tfUrl, chkbxIsJOD)
         listenTo(btImport, importFileName, importFileButton, importFolderButton)
@@ -234,6 +237,9 @@ object ImportSwingApp extends SimpleSwingApplication {
     def getImportFileChooser(): FileChooser
     def importIssues(): Unit ={
       setServerConfiguration();
+      if(chkbxFilesCleanup.selected){
+
+      }
       importIssuesInternal();
     }
     protected def importIssuesInternal()
@@ -410,8 +416,9 @@ object ImportSwingApp extends SimpleSwingApplication {
           customFldMetadata.get("items").get.toString
         } else { "" }
       }
+      val customType = customFldMetadata.get("custom").getOrElse("").toString;
       val fieldMetadataId: String = jiraDataType + ":" + itemsDataType
-      val fieldMetadata = new FieldTypeMetadata(fieldMetadataId, "Text (1024)", jiraDataType, itemsDataType, 1024, true, 100)
+      val fieldMetadata = new FieldTypeMetadata(fieldMetadataId, "Text (1024)", jiraDataType, itemsDataType, customType, 1024, true, 100)
       Constants.fieldTypeMetadataMap.put(fieldMetadataId, fieldMetadata)
       fieldMetadataId
     }
@@ -441,6 +448,7 @@ object ImportSwingApp extends SimpleSwingApplication {
           .withZephyrBaseUrl(tfZODUrl.text).withZephyrAppKey("N/A").withZephyrAccessKey(tfAccessKey.text).withZephyrSecretKey(tfSecretKey.text).build
       else
         JiraService.zConfig = null;
+      cleanupSuccessFolder(importJob);
       val executor = Executors.newSingleThreadExecutor
       val result = executor.submit(new Callable {
         val log = LogFactory.getLog(this.getClass)
@@ -450,6 +458,20 @@ object ImportSwingApp extends SimpleSwingApplication {
       })
       result.get()
     }
+
+    def cleanupSuccessFolder(importJob: ImportJob): AnyVal = {
+      if (chkbxFilesCleanup.selected) {
+        val fileObj = VFS.getManager.resolveFile(importJob.getFolder)
+        var successFolder: FileObject = null
+        if (fileObj.getType == FileType.FOLDER) {
+          successFolder = VFS.getManager.resolveFile(fileObj.toString + File.separator + "success");
+        } else {
+          successFolder = VFS.getManager.resolveFile(fileObj.getParent.toString + File.separator + "success");
+        }
+        if (successFolder.exists()) successFolder.delete(new AllFileSelector);
+      }
+    }
+
     def getTableColumns: List[String]
     def getImportManager(): ImportManager
 

@@ -121,14 +121,5 @@ public class ZConfig extends PropertiesConfiguration {
             APP_KEY = this.getString("appKey");
 
             USER_NAME =  Option.some(this.getString("userName"));
-
-//            host = new AcHost();
-//            host.setKey(JIRA_HOST_KEY);
-//            host.setBaseUrl(JIRA_BASE_URL);
-//            host.setSharedSecret(JIRA_SHARED_SECRET);
-
-            //host.setPublicKey("MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCQriXlBXjuybF3+jPDcYIbRfvZFlnH0Ci8gbINGFyx/I5bGupEyXpzbB6crlFNsY3Q+c7qT7rKOR7DJVLZX2APPAzTQhe06wjfEe1RJHdIjqCOio/VxipZAZWdmae4OWNMfo5zZ+NHb69z5qJjcYDv1EY+f2t7n323UAlwmZro9QIDAQAB");
-//        host.setSharedSecret("5bdcdc66-ded6-4fc7-ab38-82cb92a3986e");
-
         }
     }
