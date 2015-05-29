@@ -418,7 +418,7 @@ object ImportSwingApp extends SimpleSwingApplication {
         } else { "" }
       }
       val customType = customFldMetadata.get("custom").getOrElse("").toString;
-      val fieldMetadataId: String = jiraDataType + ":" + itemsDataType
+      val fieldMetadataId: String = jiraDataType + ":" + itemsDataType + ":" + customType
       val fieldMetadata = new FieldTypeMetadata(fieldMetadataId, "Text (1024)", jiraDataType, itemsDataType, customType, 1024, true, 100)
       Constants.fieldTypeMetadataMap.put(fieldMetadataId, fieldMetadata)
       fieldMetadataId

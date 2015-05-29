@@ -8,6 +8,7 @@ import java.net.{URL, URI}
 import java.util.HashMap
 
 import com.thed.model._
+import com.thed.service.impl.zie.AbstractImportManager.{SingleValueMap, ArrayMap}
 import com.thed.service.zie.ImportManager
 import com.thed.util._
 import com.thed.zfj.model.{Component, Issue, IssueType, Priority, Project, TestStep, Version}
@@ -20,6 +21,7 @@ import sjson.json._
 
 import scala.annotation.target._
 import scala.collection.JavaConversions._
+import collection.JavaConversions._
 import scala.reflect.BeanInfo
 
 // Model
@@ -139,10 +141,19 @@ object JiraService {
 
 		/* see https://developer.atlassian.com/jiradev/api-reference/jira-rest-apis/jira-rest-api-tutorials/jira-rest-api-example-create-issue */
     testcase.getCustomProperties.foreach(f = entry => issue += (entry._1 -> {
-        if (entry._2.isInstanceOf[HashMap[_,_]]){
-          //Convert java map into scala map
-          Map("value" -> entry._2.asInstanceOf[HashMap[String, String]].get("value"))
-        }else (entry._2)
+				if(entry._2.isInstanceOf[ArrayMap]){
+					//Convert java map into scala map
+					convertArrayMapToMap(entry._2.asInstanceOf[ArrayMap]);
+				}
+				else if (entry._2.isInstanceOf[SingleValueMap]){
+					//Convert java map into scala map
+					val singleValueMap = entry._2.asInstanceOf[SingleValueMap]
+					Map(singleValueMap.getMapKey -> singleValueMap.getValue)
+				}
+				else if (entry._2.isInstanceOf[Map[_,_]]){
+						//Convert java map into scala map
+						Map("value" -> entry._2.asInstanceOf[Map[String, String]].get("value"))
+				}else (entry._2)
       }
     ))
 		
@@ -169,6 +180,12 @@ object JiraService {
     values.foreach(strVal => valuesMap ++= Array(Map("value" -> strVal)))
     valuesMap
   }
+
+	private def convertArrayMapToMap(valueArrayMap:ArrayMap):Array[Map[String, String]] = {
+		var valuesMap = Array[Map[String, String]]()
+		valueArrayMap.getValues.foreach(strVal => valuesMap ++= Array(Map(valueArrayMap.getMapKey -> strVal)))
+		valuesMap
+	}
 	
 	private def saveTestcase(issue:Map[String, AnyRef]):String = {
 		var fields = new String( SJSON.out(Map("fields" -> issue)))

@@ -487,31 +487,35 @@ public abstract class AbstractImportManager extends ImportManagerSupport impleme
 					populateArrayTypeCustomField(testcase, fldConfig, rawValue, fldMetadata);
 					break;
 				case group:
-					testcase.getCustomProperties().put(fldConfig.getId(),ImmutableMap.of("name", rawValue));
+					testcase.getCustomProperties().put(fldConfig.getId(), new SingleValueMap("name", rawValue));
 					break;
 				case project:
-					testcase.getCustomProperties().put(fldConfig.getId(),ImmutableMap.of("key", rawValue));
+					testcase.getCustomProperties().put(fldConfig.getId(), new SingleValueMap("key", rawValue));
 					break;
 				case user:
-					testcase.getCustomProperties().put(fldConfig.getId(),ImmutableMap.of("name", rawValue));
+					testcase.getCustomProperties().put(fldConfig.getId(), new SingleValueMap("name", rawValue));
 					break;
 				case version:
-					testcase.getCustomProperties().put(fldConfig.getId(),ImmutableMap.of("name", rawValue));
+					testcase.getCustomProperties().put(fldConfig.getId(), new SingleValueMap("name", rawValue));
 					break;
 				case string:
 					if((fldConfig.getAllowedValues() != null && fldConfig.getAllowedValues().size() > 0)){
-						testcase.getCustomProperties().put(fldConfig.getId(),ImmutableMap.of("value", rawValue));
+						testcase.getCustomProperties().put(fldConfig.getId(), new SingleValueMap("value", rawValue));
 					}
+                    /*Multitextfield*/
+                    else{
+                        testcase.getCustomProperties().put(fldConfig.getId(), rawValue);
+                    }
 					break;
 				case number:
 					testcase.getCustomProperties().put(fldConfig.getId(), Double.parseDouble(rawValue));
 					break;
 				case date:
-					String inputPattern = System.getProperty("DATE_FORMAT");
+					String inputPattern = System.getProperty("DATE_FORMAT", DateFormatUtils.ISO_DATE_FORMAT.getPattern());
 					setDateTypeCustomField(testcase, fldConfig, rawValue, inputPattern, DateFormatUtils.ISO_DATE_FORMAT);
 					break;
 				case datetime:
-					inputPattern = System.getProperty("DATE_TIME_FORMAT");
+					inputPattern = System.getProperty("DATE_TIME_FORMAT", DateFormatUtils.ISO_DATETIME_TIME_ZONE_FORMAT.getPattern());
 					setDateTypeCustomField(testcase, fldConfig, rawValue, inputPattern, DateFormatUtils.ISO_DATETIME_TIME_ZONE_FORMAT);
 					break;
 				default:
@@ -537,33 +541,72 @@ public abstract class AbstractImportManager extends ImportManagerSupport impleme
                 testcase.getCustomProperties().put(fldConfig.getId(), rawValue.split(","));
             }else {
 				/* Multi select and Multi radio buttons */
-                ArrayList<Map> valueList = getArrayOfMapsWithKey(rawValue, "value");
+                ArrayMap valueList = getArrayOfMapsWithKey(rawValue, "value");
                 testcase.getCustomProperties().put(fldConfig.getId(), valueList);
             }
         } else if(StringUtils.equals("user", fldMetadata.getItemsDataType()) && StringUtils.equals(FieldTypeMetadata.MULTI_USER_PICKER_TYPE, fldMetadata.getCustomType())){
-			ArrayList<Map> valueList = getArrayOfMapsWithKey(rawValue, "name");
+			ArrayMap valueList = getArrayOfMapsWithKey(rawValue, "name");
             testcase.getCustomProperties().put(fldConfig.getId(), valueList);
         }else if(StringUtils.equals("version", fldMetadata.getItemsDataType()) && StringUtils.equals(FieldTypeMetadata.MULTI_VERSION_TYPE, fldMetadata.getCustomType())){
-            ArrayList<Map> valueList = getArrayOfMapsWithKey(rawValue, "name");
+            ArrayMap valueList = getArrayOfMapsWithKey(rawValue, "name");
             testcase.getCustomProperties().put(fldConfig.getId(), valueList);
         } else if(StringUtils.equals("group", fldMetadata.getItemsDataType()) && StringUtils.equals(FieldTypeMetadata.MULTI_GROUP_PICKER_TYPE, fldMetadata.getCustomType())){
-            ArrayList<Map> valueList = getArrayOfMapsWithKey(rawValue, "name");
+            ArrayMap valueList = getArrayOfMapsWithKey(rawValue, "name");
             testcase.getCustomProperties().put(fldConfig.getId(), valueList);
         } else
             log.error("Unknown items data type for Array " + fldMetadata.getItemsDataType());
 	}
 
-	private ArrayList<Map> getArrayOfMapsWithKey(String rawValue, final String mapKeyName) {
+	private ArrayMap getArrayOfMapsWithKey(String rawValue, final String mapKeyName) {
 		return getArrayOfMapsWithKey(rawValue, mapKeyName, ",");
 	}
 
-	private ArrayList<Map> getArrayOfMapsWithKey(String rawValue, final String mapKeyName, final String seperator) {
-		ArrayList<Map> valueList = new ArrayList<Map>();
-		for(String val : rawValue.split(seperator)){
-            valueList.add(ImmutableMap.of(mapKeyName, val));
-        }
-		return valueList;
+	private ArrayMap getArrayOfMapsWithKey(String rawValue, final String mapKeyName, final String seperator) {
+        return new ArrayMap(mapKeyName, rawValue.split(seperator));
+//		ArrayList<Map> valueList = new ArrayList<Map>();
+//		for(String val : rawValue.split(seperator)){
+//            Map<String, String> m = new HashMap<String, String>(1);
+//            m.put(mapKeyName, val);
+//            valueList.add(m);
+//        }
+//		return valueList.toArray(new Map[valueList.size()]);
 	}
+
+    public static class SingleValueMap{
+        private String mapKey;
+        private String value;
+
+        public SingleValueMap(String mapKey, String value) {
+            this.mapKey = mapKey;
+            this.value = value;
+        }
+
+        public String getMapKey() {
+            return mapKey;
+        }
+
+        public String getValue() {
+            return value;
+        }
+    }
+
+    public static class ArrayMap{
+        private String mapKey;
+        private String[] values;
+
+        public ArrayMap(String mapKey, String[] values) {
+            this.mapKey = mapKey;
+            this.values = values;
+        }
+
+        public String getMapKey() {
+            return mapKey;
+        }
+
+        public String[] getValues() {
+            return values;
+        }
+    }
 
 	/**
 	 * We assume that there are 2 lines at the bottom of the sheet
