@@ -1,5 +1,5 @@
 ========================================================================
-Zephyr for JIRA (Server and Data Center versions) Tests Importer Utility
+Zephyr for JIRA (Server | Data Center | Cloud versions) Tests Importer Utility
 ========================================================================
 
 
@@ -107,7 +107,10 @@ See License FAQ <http://www.apache.org/foundation/licence-FAQ.html> for more det
 Feedback
 --------
 
-Please email any questions, feedback or code contibutions to developer@getzephyr.com
+Please ask your questions on `Atlassian Answers
+<https://answers.atlassian.com/questions/topics/16646242/zephyr-importer/>`_.
+
+For feedback or code questions, send an email to developer@getzephyr.com
 
 
 Have fun!
