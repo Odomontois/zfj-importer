@@ -108,7 +108,7 @@ Feedback
 --------
 
 Please ask your questions on `Atlassian Answers
-<https://answers.atlassian.com/questions/topics/16646242/zephyr-importer/>`_.
+<https://answers.atlassian.com/questions/topics/16646242/zephyr-importer>`_.
 
 For feedback or code questions, send an email to developer@getzephyr.com
 
