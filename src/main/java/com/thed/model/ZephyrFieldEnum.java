@@ -49,6 +49,7 @@ public interface ZephyrFieldEnum {
 	public static final String RESOLUTION = "48";
 
     public static final String PRECONDITIONS = "49";
+	public static final String ISSUE_KEY = "50";		//Test issue Key, used to import steps into existing tests
 
 //	public static final String ATTACHMENT="29" ;		// used in requirement
 //	public static final String URL= "30";				// used in requirement
@@ -84,5 +85,4 @@ public interface ZephyrFieldEnum {
 	public static final String REQUIREMENT_CREATED_ON = "108";
 	
 	public static final String TCR_CATALOG_TREE_NAME = "283";
-
 }

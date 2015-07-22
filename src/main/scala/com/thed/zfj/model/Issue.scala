@@ -34,6 +34,7 @@ import sjson.json._
 @BeanInfo case class Issue( @JSONTypeHint(classOf[Project]) var project:Project, @BeanProperty var summary:String, @JSONTypeHint(classOf[IssueType]) var issuetype:IssueType,
 														@(JSONProperty @getter)(ignoreIfNull = true) @JSONTypeHint(classOf[User]) var assignee:User, 
 														@(JSONProperty @getter)(ignoreIfNull = true) @JSONTypeHint(classOf[User]) var reporter:User,
+														@(JSONProperty @getter)(ignoreIfNull = true) var key:String,
 														@(JSONProperty @getter)(ignoreIfNull = true) var description:String,
 														@(JSONProperty @getter)(ignoreIfNull = true) var environment:String,
 														@(JSONProperty @getter)(ignoreIfNull = true) var labels:Array[String],
@@ -41,7 +42,7 @@ import sjson.json._
 														@(JSONProperty @getter)(ignoreIfNull = true) @(JSONTypeHint @field)(value = classOf[Version]) var fixVersions:List[Version],
 														@(JSONProperty @getter)(ignoreIfNull = true) @(JSONTypeHint @field)(value = classOf[Component]) var components:List[Component],
                             @(JSONProperty @getter)(ignoreIfNull = true) @(JSONTypeHint @field)(value = classOf[String]) var custom:Map[String, String]) {
-	def this() = this(null, "", new IssueType(), null, null, "", "", null, null, null, null, null)
+	def this() = this(null, "", new IssueType(), null, null,"", "", "", null, null, null, null, null)
 }
 
 @BeanInfo case class TestStep( step: String, data:String, result:String) {

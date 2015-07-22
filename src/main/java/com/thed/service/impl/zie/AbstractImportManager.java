@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.regex.Pattern;
 
 import static com.thed.util.Discriminator.*;
 
@@ -539,7 +540,19 @@ public abstract class AbstractImportManager extends ImportManagerSupport impleme
 			/* Labels */
             if(StringUtils.equals(FieldTypeMetadata.LABEL_TYPE, fldMetadata.getCustomType())){
                 testcase.getCustomProperties().put(fldConfig.getId(), rawValue.split(","));
-            }else {
+            }
+			//Special handling of JIRA Agile EPIC and Sprint Field
+			else if(StringUtils.equals(FieldTypeMetadata.GH_EPIC_LINK_TYPE, fldMetadata.getCustomType())){
+				if(!Pattern.matches(Constants.ISSUE_KEY_REGEX, rawValue)){
+					log.error("EPIC key doesn't seem to be a valid JIRA Key. If this errors, try with a valid JIRA Key");
+				};
+				testcase.getCustomProperties().put(fldConfig.getId(), rawValue);
+			}else if(StringUtils.equals(FieldTypeMetadata.GH_SPRINT_TYPE, fldMetadata.getCustomType())){
+				if(!Pattern.matches("\\d+", rawValue)){
+					log.warn("Sprint id doesn't seem to be valid. Please check if import fails");
+				};
+				testcase.getCustomProperties().put(fldConfig.getId(), rawValue);
+			}else{
 				/* Multi select and Multi radio buttons */
                 ArrayMap valueList = getArrayOfMapsWithKey(rawValue, "value");
                 testcase.getCustomProperties().put(fldConfig.getId(), valueList);

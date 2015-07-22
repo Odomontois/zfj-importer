@@ -94,6 +94,13 @@ object JiraService {
       var projects:List[Project] = (SJSON.in[JiraMetaResponse](meta)).projects
       projects
 	}
+
+	def getIssue(issueKey:String):LocalIssue = {
+		val issueJson = http(getHttpRequest("/api/latest/issue/"+issueKey).as_!(userName, passwd)  >~ { _.getLines.mkString } )
+		//val projects = JSON.parseFull(meta).get.asInstanceOf[Map[String, Any]].get("projects").get.asInstanceOf[List[Any]]
+		var issue = SJSON.in[LocalIssue](issueJson)
+		issue
+	}
 	
 	def startImport(importJob:ImportJob, importManager:ImportManager):String = {
 		importManager.importAllFiles(importJob, "", 1l)

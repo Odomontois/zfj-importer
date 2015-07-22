@@ -14,7 +14,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
+import com.thed.zfj.rest.LocalIssue;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -924,6 +926,8 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 				testcase.setFixVersions(holder.getValue());
 			} else if (ZephyrFieldEnum.COMPONENT.equals(id)) {
 				testcase.components = (holder.getValue());
+			} else if (ZephyrFieldEnum.ISSUE_KEY.equals(id)) {
+				testcase.setIssueKey(holder.getValue());
 			} else {
 				/* custom fields */
 				populateCustomField(testcase, holder.getFieldConfig(),
@@ -951,19 +955,26 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 		 */
 		/* Capturing the error so that we can continue with other testcases */
 		try {
-			String issueId = JiraService.saveTestcase(testcase);
+			String issueId = "";
+			if(StringUtils.isNotBlank(testcase.getIssueKey())) {
+				//TODO - check if issueType is Test
+				if(Pattern.matches(Constants.ISSUE_KEY_REGEX, testcase.getIssueKey())){
+					LocalIssue issue = JiraService.getIssue(testcase.getIssueKey());
+					issueId = issue.id();
+				}else if(Pattern.matches("\\d+", testcase.getIssueKey())){
+					issueId = testcase.getIssueKey();
+				}
+				log.info("fetched issue id " + issueId);
+			}else{
+				issueId = JiraService.saveTestcase(testcase);
+			}
 			
-			importJob.getHistory().add(
-					new JobHistory(new Date(), "Issue " + issueId + " created!"));
+			importJob.getHistory().add(new JobHistory(new Date(), "Issue " + issueId + " created!"));
 			setTestCaseContents(issueId, testsValue, userId);
-			importJob.getHistory()
-					.add(
-							new JobHistory(new Date(), "Issue steps for " + issueId
-									+ " created!"));
-			return issueId;
+			importJob.getHistory().add(new JobHistory(new Date(), "Issue steps for " + issueId + " created!"));
+			return testcase.getIssueKey();
 		} catch (Exception ex) {
-			addJobHistory(importJob, "Unable to add testcase ending at rowNumber - "
-					+ lastRowIdForThisTC + ". Error:" + ex.getMessage());
+			addJobHistory(importJob, "Unable to add testcase ending at rowNumber - " + lastRowIdForThisTC + ". Error:" + ex.getMessage());
 			log.error("", ex);
 		}
 		return null;

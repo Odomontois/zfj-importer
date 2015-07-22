@@ -5,7 +5,7 @@ assemblySettings
 
 name := "zfj-importer"
 
-version := "0.33"
+version := "0.34"
 
 scalaVersion := "2.10.4"
 
@@ -16,6 +16,9 @@ resolvers += "Atlassian Public" at "https://maven.atlassian.com/repository/publi
 resolvers += "OSS" at "https://oss.sonatype.org/content/repositories/public"
 
 resolvers += "Pentaho Repository" at "http://repository.pentaho.org/artifactory/repo/"
+
+resolvers += "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"
+
 
 libraryDependencies ++= Seq(
   "net.databinder" %% "dispatch-http" % "0.8.10",
@@ -33,8 +36,11 @@ libraryDependencies ++= Seq(
   "org.apache.commons" % "commons-lang3" % "3.1",
   "commons-logging" % "commons-logging" % "1.1.1",
   "log4j" % "log4j" % "1.2.17",
-  "org.scala-lang" % "scala-swing" % "2.10.2" withSources ()
+  "org.scala-lang" % "scala-swing" % "2.10.2" withSources (),
+  "org.specs2" %% "specs2-core" % "3.6.2" % "test"
 )
+
+scalacOptions in Test ++= Seq("-Yrangepos")
 
 mainClass in assembly := Some("com.thed.zfj.ui.ImportSwingApp")
 

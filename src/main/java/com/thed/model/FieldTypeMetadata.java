@@ -27,6 +27,8 @@ public class FieldTypeMetadata {
 	public static final String RADIO_BUTTONS_TYPE = "com.atlassian.jira.plugin.system.customfieldtypes:radiobuttons";
 	public static final String GROUP_PICKER_TYPE = "com.atlassian.jira.plugin.system.customfieldtypes:grouppicker";
     public static final String MULTI_GROUP_PICKER_TYPE = "com.atlassian.jira.plugin.system.customfieldtypes:multigrouppicker";
+	public static final String GH_SPRINT_TYPE = "com.pyxis.greenhopper.jira:gh-sprint";
+	public static final String GH_EPIC_LINK_TYPE = "com.pyxis.greenhopper.jira:gh-epic-link";
 	public static final String MULTI_SELECT_TYPE = "com.atlassian.jira.plugin.system.customfieldtypes:multiselect";
 
 	

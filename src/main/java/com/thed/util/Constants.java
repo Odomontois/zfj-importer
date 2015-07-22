@@ -19,8 +19,9 @@ public class Constants{
 	public static final HashMap<String, FieldConfig> excelFieldConfigs = new LinkedHashMap<String, FieldConfig>();
 	public static final HashMap<String, FieldConfig> xmlFieldConfigs = new LinkedHashMap<String, FieldConfig>();
     public static final HashMap<String, FieldTypeMetadata> fieldTypeMetadataMap = new LinkedHashMap<String, FieldTypeMetadata>();
-		
-	static{
+    public static final String ISSUE_KEY_REGEX = "((?<!([A-Z]{1,10})-?)[A-Z]+-\\d+)";
+
+    static{
         excelFieldConfigs.put(ZephyrFieldEnum.NAME, new FieldConfig(ZephyrFieldEnum.NAME, "testcase", true, "string", "name", "name", "Name *", "This is Name", true, true, true, true, 255, null));
         excelFieldConfigs.put(ZephyrFieldEnum.STEPS, new FieldConfig(ZephyrFieldEnum.STEPS, "testcase", true, "string", "step", "step", "Step *", "This is Step", true, true, true, true, 255, null));
         excelFieldConfigs.put(ZephyrFieldEnum.RESULT, new FieldConfig(ZephyrFieldEnum.RESULT, "testcase", true, "string", "result", "result", "Result *", "This is Result", true, true, true, true, 255, null));
@@ -33,6 +34,7 @@ public class Constants{
         excelFieldConfigs.put(ZephyrFieldEnum.PRIORITY, new FieldConfig(ZephyrFieldEnum.PRIORITY, "testcase", true, "string", "priority", "priority", "Priority", "This is Priority", true, true, true, true, 255, null));
         excelFieldConfigs.put(ZephyrFieldEnum.ASSIGNEE, new FieldConfig(ZephyrFieldEnum.ASSIGNEE, "testcase", true, "string", "externalId", "externalId", "Assignee", "This is assignee", true, true, true, true, 255, null));
         excelFieldConfigs.put(ZephyrFieldEnum.DESCRIPTION, new FieldConfig(ZephyrFieldEnum.DESCRIPTION, "testcase", true, "string", "description", "description", "Description", "This is description", true, true, true, true, 255, null));
+        excelFieldConfigs.put(ZephyrFieldEnum.ISSUE_KEY, new FieldConfig(ZephyrFieldEnum.ISSUE_KEY, "testcase", true, "string", "issueKey", "issueKey", "Issue Key [Use to append steps to existing test]", "JIRA Key for Existing Test, will append steps to existing tests", true, true, true, true, 255, null));
 
         //In case of testlink, priority can come from importance or from customField. Following field will allow it to fetched from custom Field
         xmlFieldConfigs.put(ZephyrFieldEnum.PRIORITY, new FieldConfig(ZephyrFieldEnum.PRIORITY, "testcase", true, "string", "importance", "importance", "Importance", "This is importance", true, true, true, true, 255, null));
