@@ -138,6 +138,9 @@ object JiraService {
 		if(testcase.getTag() != null){
 			issue += ("labels" -> testcase.getTag().split(","))
 		}
+		if(testcase.getDueDate() != null){
+			issue += ("duedate" -> testcase.getDueDate());
+		}
 		if(testcase.getComments() != null){
 			//TBI
 		}

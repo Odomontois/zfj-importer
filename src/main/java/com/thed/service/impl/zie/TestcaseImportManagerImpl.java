@@ -928,7 +928,10 @@ public class TestcaseImportManagerImpl extends AbstractImportManager {
 				testcase.components = (holder.getValue());
 			} else if (ZephyrFieldEnum.ISSUE_KEY.equals(id)) {
 				testcase.setIssueKey(holder.getValue());
-			} else {
+			} else if (ZephyrFieldEnum.DUE_DATE.equals(id)){
+				testcase.setDueDate(holder.getValue());
+			}
+			else {
 				/* custom fields */
 				populateCustomField(testcase, holder.getFieldConfig(),
 						holder.getValue());

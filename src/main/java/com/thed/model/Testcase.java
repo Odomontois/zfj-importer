@@ -64,10 +64,12 @@ public class Testcase implements java.io.Serializable {
 
     private Map<String, Object> customProperties = new HashMap<String, Object>();
 
+    private String dueDate;
+
 
     public Testcase(String name, String description, String status, String priority, String tag, Date lastModifiedOn, Date creationDate, String comments, Date completedOn, Boolean isComplex,
                     Integer estimatedTime, String assignee, String creator, Long lastUpdaterId, String externalId, Boolean temp, Boolean automated, String scriptId, String scriptName, String scriptPath,
-                    String fixVersions, String components, String issueKey) {
+                    String fixVersions, String components, String issueKey, String dueDate) {
         this.name = name;
         this.description = description;
         this.status = status;
@@ -92,6 +94,7 @@ public class Testcase implements java.io.Serializable {
         this.fixVersions = fixVersions;
         this.components = components;
         this.issueKey = issueKey;
+        this.dueDate = dueDate;
     }
 
     public Testcase() {
@@ -431,5 +434,13 @@ public class Testcase implements java.io.Serializable {
 
     public void setIssueKey(String issueKey) {
         this.issueKey = issueKey;
+    }
+
+    public void setDueDate(String dueDate) {
+        this.dueDate = dueDate;
+    }
+
+    public String getDueDate() {
+        return dueDate;
     }
 }

@@ -5,7 +5,7 @@ assemblySettings
 
 name := "zfj-importer"
 
-version := "0.34"
+version := "0.35"
 
 scalaVersion := "2.10.4"
 
@@ -43,6 +43,12 @@ libraryDependencies ++= Seq(
 scalacOptions in Test ++= Seq("-Yrangepos")
 
 mainClass in assembly := Some("com.thed.zfj.ui.ImportSwingApp")
+
+lazy val deploy = taskKey[Unit]("Deploys file")
+
+deploy := {
+  "./buildJar.sh " + version.value !
+}
 
 //excludedFiles in assembly := { (bases: Seq[File]) =>
 //  bases flatMap { base =>
