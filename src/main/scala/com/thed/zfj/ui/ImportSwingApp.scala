@@ -361,7 +361,7 @@ object ImportSwingApp extends SimpleSwingApplication {
         new Label("Attach worksheet to issue"), chkAttachFile)
       contents += spreadSheet
     }
-    listenTo(spreadSheet, chkImportAllSheets, cbissueType.selection)
+    listenTo(spreadSheet, spreadSheet.table, chkImportAllSheets, cbissueType.selection)
     reactions += {
       case ButtonClicked(`chkImportAllSheets`) =>
         tfSheetFilter.enabled = chkImportAllSheets.selected

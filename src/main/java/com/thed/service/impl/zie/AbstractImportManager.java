@@ -511,6 +511,9 @@ public abstract class AbstractImportManager extends ImportManagerSupport impleme
 				case number:
 					testcase.getCustomProperties().put(fldConfig.getId(), Double.parseDouble(rawValue));
 					break;
+				case option:
+					testcase.getCustomProperties().put(fldConfig.getId(), new SingleValueMap("value", rawValue));
+					break;
 				case date:
 					String inputPattern = System.getProperty("DATE_FORMAT", DateFormatUtils.ISO_DATE_FORMAT.getPattern());
 					setDateTypeCustomField(testcase, fldConfig, rawValue, inputPattern, DateFormatUtils.ISO_DATE_FORMAT);
@@ -536,7 +539,8 @@ public abstract class AbstractImportManager extends ImportManagerSupport impleme
 	}
 
 	private void populateArrayTypeCustomField(Testcase testcase, FieldConfig fldConfig, String rawValue, FieldTypeMetadata fldMetadata) {
-		if (StringUtils.equals("string", fldMetadata.getItemsDataType())) {
+		if (StringUtils.equals("string", fldMetadata.getItemsDataType())
+				|| StringUtils.equals("option", fldMetadata.getItemsDataType())) {
 			/* Labels */
             if(StringUtils.equals(FieldTypeMetadata.LABEL_TYPE, fldMetadata.getCustomType())){
                 testcase.getCustomProperties().put(fldConfig.getId(), rawValue.split(","));

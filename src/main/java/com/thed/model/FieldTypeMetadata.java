@@ -177,6 +177,8 @@ public class FieldTypeMetadata {
         project,
         string,
         user,
-        version
+        version,
+		option,
+		any
     }
 }
