@@ -237,8 +237,8 @@ object JiraService {
 	private def saveTestStepCloud(issueId:String, step:TestStep):String = {
 		var fields = new String( SJSON.out(step))
 		println(fields + " \n IssueId is:" + issueId)
-		var jwtToken = ZFJRestClientUtil.getJWTToken(new URI(zConfig.ZEPHYR_BASE_URL + "/rest/teststep/" + issueId + "?projectId=" + project.id), HttpMethod.POST, zConfig)
-		var stepResponse = http(getHttpRequest("/api/1.0/teststep/" + issueId + "?projectId=" + project.id, zConfig.ZEPHYR_BASE_URL + "/public" ) <:< Map(
+		var jwtToken = ZFJRestClientUtil.getJWTToken(new URI(zConfig.ZEPHYR_BASE_URL + "/public/rest/api/1.0/teststep/" + issueId + "?projectId=" + project.id), HttpMethod.POST, zConfig)
+		var stepResponse = http(getHttpRequest("/api/1.0/teststep/" + issueId + "?projectId=" + project.id, zConfig.ZEPHYR_BASE_URL + "/public/rest" ) <:< Map(
 			"User-Agent" -> "ZFJImporter",
 			"Authorization" -> jwtToken,
 			"zapiAccessKey" -> zConfig.ACCESS_KEY)  << (fields, "application/json") >~ { _.getLines.mkString } )
