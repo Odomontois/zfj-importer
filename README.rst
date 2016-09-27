@@ -74,6 +74,11 @@ Compiling from Source
 2. Download the source for zfj-importer repo from https://bitbucket.org/zfjdeveloper/zfj-importer/src/
 3. Open a command prompt and type **sbt assembly**. This will download appropriate binary dependencies and build the project. 
 
+*This codebase can only compile with java 1.6*
+
+# On Mac
+
+```sbt -java-home /Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home assembly```
 
 
 License
