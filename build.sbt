@@ -5,11 +5,9 @@ assemblySettings
 
 name := "zfj-importer"
 
-version := "0.38"
+version := "0.39"
 
 scalaVersion := "2.10.4"
-
-resolvers += "Local Maven Repository" at "file:///Users/smangal/.m2/repository"
 
 resolvers += "Atlassian Public" at "https://maven.atlassian.com/repository/public"
 
@@ -24,7 +22,7 @@ libraryDependencies ++= Seq(
   "net.databinder" %% "dispatch-http" % "0.8.10",
   "net.databinder" %% "dispatch-mime" % "0.8.10",
   "net.debasishg" %% "sjson" % "0.19",
-  "com.atlassian.jwt" % "jwt-plugin" % "1.2.4" withSources (),
+  "com.atlassian.jwt" % "jwt-plugin" % "1.6.1" withSources (),
   "com.atlassian.httpclient" % "atlassian-httpclient-api" % "0.21.1" withSources (),
   "com.atlassian.fugue" % "fugue" % "1.1" withSources (),
   "org.apache.poi" % "poi" % "3.9" withSources(),

@@ -4,14 +4,16 @@ package com.thed.zfj.rest
 // - SJSON (https://github.com/debasishg/sjson)
 
 import java.io.File
-import java.net.{URL, URI}
+import java.net.{URI, URL}
 import java.util.HashMap
 
+import com.atlassian.fugue
 import com.thed.model._
-import com.thed.service.impl.zie.AbstractImportManager.{SingleValueMap, ArrayMap}
+import com.thed.service.impl.zie.AbstractImportManager.{ArrayMap, SingleValueMap}
 import com.thed.service.zie.ImportManager
 import com.thed.util._
 import com.thed.zfj.model.{Component, Issue, IssueType, Priority, Project, TestStep, Version}
+import com.thed.zfj.ui.ImportSwingApp.cbissueType
 import dispatch.classic._
 import dispatch.classic.mime.Mime._
 import org.apache.commons.lang3.StringUtils
@@ -23,9 +25,11 @@ import scala.annotation.target._
 import scala.collection.JavaConversions._
 import collection.JavaConversions._
 import scala.reflect.BeanInfo
+import scala.swing.Dialog
 
 // Model
 @BeanInfo class LocalIssue(val id: String, val key: String) { def this() = this("10000", "") }
+@BeanInfo class LocalUser(val accountId: String) { def this() = this("dummyAccountId") }
 @BeanInfo class JiraMetaResponse(val expand:String, @(JSONTypeHint @field)(value = classOf[Project])val projects:List[Project]){ def this() = this("projects", null) }
 object ZfjServerType extends Enumeration { val BTF, Cloud = Value}
 
@@ -207,6 +211,20 @@ object JiraService {
 		val issueRes = SJSON.in[LocalIssue](issueOutput)
     log.debug(issueOutput)
 		issueRes.id
+	}
+
+	def updateAccountId():String = {
+		var accountId = ""
+		try {
+			val accountIdRes = http(getHttpRequest("/api/latest/myself").as_!(userName, passwd) >~ {
+				_.getLines.mkString
+			})
+			println(accountIdRes);
+			val userRes = SJSON.in[LocalUser](accountIdRes)
+			 accountId = userRes.accountId;
+			println(accountId);
+			accountId
+		 }
 	}
 
   private def updateComments(issueId:String, comments:String):Unit = {

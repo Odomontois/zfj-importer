@@ -1,7 +1,6 @@
 package com.thed.zfj.rest;
 
 import com.atlassian.fugue.Option;
-import com.atlassian.httpclient.api.Request;
 import com.atlassian.jwt.SigningAlgorithm;
 import com.atlassian.jwt.core.TimeUtil;
 import com.atlassian.jwt.core.writer.JsonSmartJwtJsonBuilder;
@@ -20,6 +19,7 @@ import com.google.common.collect.Maps;
 import com.thed.jwt.JwtAuthorizationGenerator;
 import com.thed.model.ZConfig;
 import com.thed.util.HttpMethod;
+import net.minidev.json.JSONObject;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicHeaderValueParser;
@@ -75,6 +75,15 @@ public class ZFJRestClientUtil {
                         .issuer(zConfig.ACCESS_KEY);
 //                        if(acHost.getKey() != null)
 //                            jsonBuilder.audience(acHost.getKey());
+                if(zConfig.ACCOUNT_ID != null && zConfig.ACCOUNT_ID.isDefined()
+                        && zConfig.ACCOUNT_ID.get().length() > 3){
+                    logger.info("ACCOUNT_ID: "+zConfig.ACCOUNT_ID);
+                    JSONObject contextObject = new JSONObject();
+                    JSONObject userObject = new JSONObject();
+                    userObject.put("accountId",zConfig.ACCOUNT_ID.getOrElse("").toString());
+                    contextObject.put("user",userObject);
+                    jsonBuilder.claim("context",contextObject);
+                }
 
                 if (null != userKeyValue) {
                     jsonBuilder = jsonBuilder.subject(userKeyValue);

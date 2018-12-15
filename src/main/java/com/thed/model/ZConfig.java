@@ -14,6 +14,7 @@ import java.util.Map;
 public class ZConfig extends PropertiesConfiguration {
 
         public Option<String> USER_NAME;
+        public Option<String> ACCOUNT_ID;
         public String JIRA_HOST_KEY;
         public String JIRA_BASE_URL;
         public String JIRA_SHARED_SECRET;
@@ -23,7 +24,17 @@ public class ZConfig extends PropertiesConfiguration {
         public String SECRET_KEY;
         public String ACCESS_KEY;
 
-        final List<String> reqdConfigKeys = ImmutableList.<String>builder().add("userName").add("jiraHostKey").add("jiraBaseURL").add("sharedSecret").add("zephyrBaseURL").add("accessKey").add("secretKey").add("appKey").build();
+        final List<String> reqdConfigKeys = ImmutableList.<String>builder()
+                .add("userName")
+                .add("accountId")
+                .add("jiraHostKey")
+                .add("jiraBaseURL")
+                .add("sharedSecret")
+                .add("zephyrBaseURL")
+                .add("accessKey")
+                .add("secretKey")
+                .add("appKey")
+                .build();
 
         private ZConfig(){
         }
@@ -103,6 +114,11 @@ public class ZConfig extends PropertiesConfiguration {
                 return this;
             }
 
+            public ZConfigBuilder withJiraAccountId(String accountId) {
+                zconfig.addProperty("accountId", accountId);
+                return this;
+            }
+
             public ZConfig build() throws ConfigurationException{
                 zconfig.configure();
                 return zconfig;
@@ -121,5 +137,6 @@ public class ZConfig extends PropertiesConfiguration {
             APP_KEY = this.getString("appKey");
 
             USER_NAME =  Option.some(this.getString("userName"));
+            ACCOUNT_ID =  Option.some(this.getString("accountId"));
         }
     }

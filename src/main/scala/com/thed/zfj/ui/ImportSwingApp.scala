@@ -231,7 +231,11 @@ object ImportSwingApp extends SimpleSwingApplication {
       JiraService.serverType = if(chkbxIsJOD.selected) ZfjServerType.Cloud else ZfjServerType.BTF;
       if(chkbxIsJOD.selected)
         JiraService.zConfig = new ZConfig.ZConfigBuilder().withJiraUserName(tfUserName.text).withJiraHostKey("N/A").withJIRABaseUrl(tfUrl.text).withJIRASharedSecret("N/A")
-        .withZephyrBaseUrl(tfZODUrl.text).withZephyrAppKey("N/A").withZephyrAccessKey(tfAccessKey.text).withZephyrSecretKey(tfSecretKey.text).build
+        .withZephyrBaseUrl(tfZODUrl.text)
+        .withZephyrAppKey("N/A")
+        .withJiraAccountId(JiraService.updateAccountId())
+        .withZephyrAccessKey(tfAccessKey.text)
+        .withZephyrSecretKey(tfSecretKey.text).build
       else
         JiraService.zConfig = null;
     }
@@ -445,8 +449,16 @@ object ImportSwingApp extends SimpleSwingApplication {
       JiraService.issueType = new IssueType(cbissueType.selection.item.id)
       JiraService.serverType = if(chkbxIsJOD.selected) ZfjServerType.Cloud else ZfjServerType.BTF;
       if(chkbxIsJOD.selected)
-        JiraService.zConfig = new ZConfig.ZConfigBuilder().withJiraUserName(tfUserName.text).withJiraHostKey("N/A").withJIRABaseUrl(tfUrl.text).withJIRASharedSecret("N/A")
-          .withZephyrBaseUrl(tfZODUrl.text).withZephyrAppKey("N/A").withZephyrAccessKey(tfAccessKey.text).withZephyrSecretKey(tfSecretKey.text).build
+        JiraService.zConfig = new ZConfig.ZConfigBuilder()
+          .withJiraUserName(tfUserName.text)
+          .withJiraHostKey("N/A")
+          .withJIRABaseUrl(tfUrl.text)
+          .withJIRASharedSecret("N/A")
+          .withZephyrBaseUrl(tfZODUrl.text)
+          .withZephyrAppKey("N/A")
+          .withJiraAccountId(JiraService.updateAccountId())
+          .withZephyrAccessKey(tfAccessKey.text)
+          .withZephyrSecretKey(tfSecretKey.text).build
       else
         JiraService.zConfig = null;
       cleanupSuccessFolder(importJob);
