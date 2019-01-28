@@ -19,7 +19,6 @@ import com.google.common.collect.Maps;
 import com.thed.jwt.JwtAuthorizationGenerator;
 import com.thed.model.ZConfig;
 import com.thed.util.HttpMethod;
-import net.minidev.json.JSONObject;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicHeaderValueParser;
@@ -73,17 +72,7 @@ public class ZFJRestClientUtil {
                         .issuedAt(TimeUtil.currentTimeSeconds())
                         .expirationTime(TimeUtil.currentTimePlusNSeconds(jwtExpiryWindowSeconds))
                         .issuer(zConfig.ACCESS_KEY);
-//                        if(acHost.getKey() != null)
-//                            jsonBuilder.audience(acHost.getKey());
-                if(zConfig.ACCOUNT_ID != null && zConfig.ACCOUNT_ID.isDefined()
-                        && zConfig.ACCOUNT_ID.get().length() > 3){
-                    logger.info("ACCOUNT_ID: "+zConfig.ACCOUNT_ID);
-                    JSONObject contextObject = new JSONObject();
-                    JSONObject userObject = new JSONObject();
-                    userObject.put("accountId",zConfig.ACCOUNT_ID.getOrElse("").toString());
-                    contextObject.put("user",userObject);
-                    jsonBuilder.claim("context",contextObject);
-                }
+
 
                 if (null != userKeyValue) {
                     jsonBuilder = jsonBuilder.subject(userKeyValue);
@@ -154,7 +143,7 @@ public class ZFJRestClientUtil {
         Option<String> jwt = null;
         try {
             final URI uriWithoutProductContext = getUri(fullUri, zConfig.ZEPHYR_BASE_URL);
-            jwt = jwtAuthorisationGenerator.generate(httpMethod, uriWithoutProductContext, new HashMap<String, List<String>>(), zConfig.USER_NAME);
+            jwt = jwtAuthorisationGenerator.generate(httpMethod, uriWithoutProductContext, new HashMap<String, List<String>>(), zConfig.ACCOUNT_ID);
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error in authenticating request", e);
         }
