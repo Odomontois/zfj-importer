@@ -19,7 +19,7 @@ public class Constants{
 	public static final HashMap<String, FieldConfig> excelFieldConfigs = new LinkedHashMap<String, FieldConfig>();
 	public static final HashMap<String, FieldConfig> xmlFieldConfigs = new LinkedHashMap<String, FieldConfig>();
     public static final HashMap<String, FieldTypeMetadata> fieldTypeMetadataMap = new LinkedHashMap<String, FieldTypeMetadata>();
-    public static final String ISSUE_KEY_REGEX = "((?<!([A-Z]{1,10})-?)[A-Z]+-\\d+)";
+    public static final String ISSUE_KEY_REGEX = "((?<!([A-Z]{1,10})-?)[A-Z]+\\d?-\\d+)";
 
     static{
         excelFieldConfigs.put(ZephyrFieldEnum.NAME, new FieldConfig(ZephyrFieldEnum.NAME, "testcase", true, "string", "name", "name", "Name *", "This is Name", true, true, true, true, 255, null));
