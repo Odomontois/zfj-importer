@@ -22,15 +22,13 @@ import sjson.json.Serializer.SJSON
 import sjson.json._
 
 import scala.annotation.target._
-import scala.collection.JavaConversions._
-import collection.JavaConversions._
-import scala.reflect.BeanInfo
+import scala.jdk.CollectionConverters._
 import scala.swing.Dialog
 
 // Model
-@BeanInfo class LocalIssue(val id: String, val key: String) { def this() = this("10000", "") }
-@BeanInfo class LocalUser(val accountId: String) { def this() = this("dummyAccountId") }
-@BeanInfo class JiraMetaResponse(val expand:String, @(JSONTypeHint @field)(value = classOf[Project])val projects:List[Project]){ def this() = this("projects", null) }
+class LocalIssue(val id: String, val key: String) { def this() = this("10000", "") }
+class LocalUser(val accountId: String) { def this() = this("dummyAccountId") }
+class JiraMetaResponse(val expand:String, @(JSONTypeHint @field)(value = classOf[Project])val projects:List[Project]){ def this() = this("projects", null) }
 object ZfjServerType extends Enumeration { val BTF, Cloud = Value}
 
 //http://localhost:8080/rest/api/latest/issue/IC-1

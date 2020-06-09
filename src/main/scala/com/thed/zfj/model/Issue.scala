@@ -1,37 +1,35 @@
 package com.thed.zfj.model;
 
-import scala.reflect.BeanInfo
-import scala.reflect.BeanProperty
-import scala.annotation.target._
-import sjson.json._
 
-@BeanInfo case class Project(@(JSONProperty @getter)(ignoreIfNull = true)id: String, @(JSONProperty @getter)(ignoreIfNull = true)key: String, 
+import scala.beans.BeanProperty
+import scala.annotation.target._
+
+case class Project(@(JSONProperty @getter)(ignoreIfNull = true)id: String, @(JSONProperty @getter)(ignoreIfNull = true)key: String, 
 															@(JSONProperty @getter)(ignoreIfNull = true)name:String, @(JSONProperty @getter)(ignoreIfNull = true)avatarUrls:Map[String, String],
 															@(JSONProperty @getter)(ignoreIfNull = true) @(JSONTypeHint @field)(value = classOf[IssueType])issuetypes:List[IssueType]) {
 	def this(id:String) = this(id, null, "Projects", null, null)
 	def this() = this(null)
 }
 
-@BeanInfo case class IssueType( @JSONProperty(ignoreIfNull = true)id: String, @JSONProperty(ignoreIfNull = true)name:String, @JSONProperty(ignoreIfNull = true)description:String,
+case class IssueType( @JSONProperty(ignoreIfNull = true)id: String, @JSONProperty(ignoreIfNull = true)name:String, @JSONProperty(ignoreIfNull = true)description:String,
                                 @(JSONProperty @getter)(ignoreIfNull = true)fields: Map[String, AnyRef]) {
 	def this(id:String) = this(id, "Test", "", null)
 	def this() = this(null)
 }
 
-@BeanInfo case class User( name: String) {
+case class User( name: String) 
+
+case class Priority( @(JSONProperty @getter)(ignoreIfNull = true) id:String, @(JSONProperty @getter)(ignoreIfNull = true) name:String = null) {
 }
 
-@BeanInfo case class Priority( @(JSONProperty @getter)(ignoreIfNull = true) id:String, @(JSONProperty @getter)(ignoreIfNull = true) name:String = null) {
+case class Version(  @(JSONProperty @getter)(ignoreIfNull = true)name: String) {
 }
 
-@BeanInfo case class Version(  @(JSONProperty @getter)(ignoreIfNull = true)name: String) {
-}
-
-@BeanInfo case class Component( @(JSONProperty @getter)(ignoreIfNull = true)name: String) {
+ case class Component( @(JSONProperty @getter)(ignoreIfNull = true)name: String) {
 }
 
 
-@BeanInfo case class Issue( @JSONTypeHint(classOf[Project]) var project:Project, @BeanProperty var summary:String, @JSONTypeHint(classOf[IssueType]) var issuetype:IssueType,
+case class Issue( @JSONTypeHint(classOf[Project]) var project:Project, @BeanProperty var summary:String, @JSONTypeHint(classOf[IssueType]) var issuetype:IssueType,
 														@(JSONProperty @getter)(ignoreIfNull = true) @JSONTypeHint(classOf[User]) var assignee:User, 
 														@(JSONProperty @getter)(ignoreIfNull = true) @JSONTypeHint(classOf[User]) var reporter:User,
 														@(JSONProperty @getter)(ignoreIfNull = true) var key:String,
@@ -45,5 +43,5 @@ import sjson.json._
 	def this() = this(null, "", new IssueType(), null, null,"", "", "", null, null, null, null, null)
 }
 
-@BeanInfo case class TestStep( step: String, data:String, result:String) {
+ case class TestStep( step: String, data:String, result:String) {
 }
