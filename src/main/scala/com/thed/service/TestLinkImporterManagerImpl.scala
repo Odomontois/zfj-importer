@@ -8,7 +8,7 @@ import com.thed.zfj.rest.JiraService
 import com.thed.zfj.model.TestStep
 import xml.pull._
 import com.thed.util.{ObjectUtil, Constants}
-import scala.collection.JavaConversions._
+import scala.jdk.CollectionConverters._
 import com.thed.model._
 import java.util.Date
 import org.apache.commons.logging.Log;
